@@ -1,0 +1,59 @@
+{% extends 'core/base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Agregar Producto{% endblock title %}
+
+{% block content %}
+<div class="container">
+    <div class="columns is-centered">
+        <div class="column is-half">
+            <div class="box">
+                <h1 class="title has-text-centered mb-5">🍕 Agregar Nueva Pizza</h1>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <!-- 🔸 Campos del formulario -->
+                    {% for field in form %}
+                        <div class="field">
+                            <label class="label">{{ field.label }}</label>
+                            <div class="control">
+                                {% if field.field.widget.input_type == "file" %}
+                                    <div class="file has-name is-fullwidth">
+                                        <label class="file-label">
+                                            {{ field }}
+                                        </label>
+                                    </div>
+                                {% else %}
+                                    {{ field|add_class:"input" }}
+                                {% endif %}
+                            </div>
+                            {% if field.errors %}
+                                <p class="help is-danger">{{ field.errors|join:", " }}</p>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <!-- 🖱️ Botones -->
+                    <div class="field is-grouped is-grouped-centered mt-5">
+                        <div class="control">
+                            <button class="button is-primary is-uppercase is-medium">
+                                <span class="icon">
+                                    <i class="fas fa-plus"></i>
+                                </span>
+                                <span>Agregar producto</span>
+                            </button>
+                        </div>
+                        <div class="control">
+                            <a href="{% url 'vendor:vendor-admin' %}" class="button is-light is-uppercase is-medium">
+                                Cancelar
+                            </a>
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

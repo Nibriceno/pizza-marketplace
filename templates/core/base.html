@@ -1,0 +1,153 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Pizza Marketplace{% endblock title %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.2/css/bulma.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <style>
+        /* 🧭 Evita que se corte el menú desplegable */
+        .navbar {
+            overflow: visible !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ✅ Navbar -->
+    <nav class="navbar" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <!-- 🍕 LOGO -->
+            <a class="navbar-item" href="{% url 'core:home' %}">
+                <img src="https://cdn-icons-png.flaticon.com/512/1404/1404945.png"
+                     alt="Pizza Marketplace Logo"
+                     style="height: 40px; width: auto; object-fit: contain;">
+            </a>
+
+            <!-- 🍔 Burger menu para móvil -->
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+
+        <div id="navbarBasicExample" class="navbar-menu">
+            <!-- 🌐 NAVBAR START -->
+            <div class="navbar-start">
+                <a class="navbar-item" href="{% url 'core:home' %}">Inicio</a>
+
+                {% for category in categories %}
+                    <a class="navbar-item" href="{% url 'product:category' category.slug %}">
+                        {{ category.title }}
+                    </a>
+                {% endfor %}
+
+                <!-- 🔍 Barra de búsqueda -->
+                <div class="navbar-item">
+                    <form method="get" action="{% url 'product:search' %}">
+                        <div class="field has-addons">
+                            <div class="control">
+                                <input type="search" name="query" class="input" placeholder="Buscar...">
+                            </div>
+                            <div class="control">
+                                <button class="button is-dark is-uppercase">Buscar</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 🌐 NAVBAR END -->
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <a href="{% url 'cart:cart' %}" class="button is-warning">
+                        Carrito {% if cart %}({{ cart|length }}){% endif %}
+                    </a>
+                </div>
+
+                {% if request.user.is_authenticated %}
+                <!-- 👤 Usuario logueado -->
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <a class="navbar-link is-capitalized">
+                        {{ user.vendor.name }}
+                    </a>
+
+                    <div class="navbar-dropdown is-right">
+                        <a class="navbar-item" href="{% url 'vendor:vendor-admin' %}">Perfil</a>
+                        <a class="navbar-item" href="{% url 'vendor:edit-vendor' %}">Actualizar Perfil</a>
+                        <a class="navbar-item" href="{% url 'vendor:add-product' %}">Agregar Producto</a>
+                        <hr class="navbar-divider">
+                        <a class="navbar-item" href="{% url 'vendor:logout' %}">Cerrar sesión</a>
+                    </div>
+                </div>
+                {% else %}
+                <!-- 🚪 Usuario no logueado -->
+                <div class="navbar-item">
+                    <div class="buttons">
+                        <a class="button is-primary" href="{% url 'vendor:become-vendor' %}">
+                            <strong>Hazte Vendedor</strong>
+                        </a>
+                        <a class="button is-light" href="{% url 'vendor:login' %}">
+                            Iniciar sesión
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- 📄 Contenido -->
+    <section class="section">
+        <div class="container">
+            {% block content %}{% endblock content %}
+        </div>
+    </section>
+
+    <!-- 📎 Footer -->
+    <footer class="footer">
+        <div class="content has-text-centered">
+            <h3 class="is-size-4 mb-4">🍕 Pizza Marketplace</h3>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'vendor:vendor-admin' %}">Vendedor Admin</a>
+            {% else %}
+                <a href="{% url 'vendor:become-vendor' %}">Hazte Vendedor</a>
+            {% endif %}
+            <br>
+            <a href="{% url 'vendor:vendors' %}">Todos los vendedores</a>
+            <p style="font-size: 0.9rem; color: #777; margin-top: 1rem;">
+                © 2025 Nicolás Briceño. Todos los derechos reservados.
+            </p>
+        </div>
+    </footer>
+
+    <!-- 🧭 Script para el menú responsive -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+
+            if ($navbarBurgers.length > 0) {
+                $navbarBurgers.forEach(el => {
+                    el.addEventListener('click', () => {
+                        const target = el.dataset.target;
+                        const $target = document.getElementById(target);
+
+                        el.classList.toggle('is-active');
+                        $target.classList.toggle('is-active');
+                    });
+                });
+            }
+        });
+    </script>
+    
+
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block scripts %}{% endblock scripts %}
+</body>
+</html>
+

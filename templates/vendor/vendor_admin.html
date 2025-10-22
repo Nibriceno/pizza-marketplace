@@ -1,0 +1,110 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Administración de Vendedor{% endblock title %}
+
+{% block content %}
+
+    <h1 class="title">Administración de Vendedor - <span class="is-capitalized">{{vendor.name}}</span></h1>
+
+    <div class="mb-5">
+        <strong>Mi Saldo: </strong> ${{vendor.get_balance}} <br>
+        <strong>Monto Pagado: </strong> ${{vendor.get_paid_amount}} 
+    </div>
+
+    <div class="box">
+        <h2 class="is-size-3 mb-4">Mis Productos</h2>
+
+        <a href="{% url 'vendor:add-product' %}" class="button is-dark is-uppercase mb-6">Agregar Producto</a>
+
+        {% if products %}
+            <table class="table is-fullwidth">
+                <thead>
+                    <tr>
+                        <th>N°</th>
+                        <th>Título</th>
+                        <th>Precio</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for product in products %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <a href="{% url 'product:product' product.category.slug product.slug %}">
+                                    {{ product.title }}
+                                </a>
+                            </td>
+                            <td>${{ product.price }}</td>
+                            <td>
+                                <a href="{% url 'vendor:delete-product' product.pk %}"
+                                   class="button is-dark is-uppercase"
+                                   style="background-color:#dc2626; border:none;"
+                                   onclick="return confirm('¿Estás seguro que quieres eliminar este producto?');">
+                                    <span class="icon">
+                                        <i class="fas fa-trash"></i>
+                                    </span>
+                                    <span>Eliminar</span>
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="has-text-danger">Aún no has agregado productos.</p>
+        {% endif %}
+    </div>
+
+    <div class="box">
+        <h2 class="is-size-3 mb-4">Mis Pedidos</h2>
+
+        {% if orders %}
+            {% for order in orders %}
+                <div class="{% if order.fully_paid %}has-background-success-light{% else %}has-background-info-light{% endif %} mb-2 p-4">
+                    <div class="columns is-multiline">
+                        <div class="column is-6">
+                            <h3 class="is-size-4">#{{ order.id }} - {{ order.first_name }} {{ order.last_name }}</h3>
+                        </div>
+    
+                        <div class="column is-12">
+                            <b>Nombre:</b> {{ order.first_name }} {{ order.last_name }}<br>
+                            <b>Dirección:</b> {{ order.address }}<br>
+                            <b>Código Postal y Ciudad:</b> {{ order.zipcode }} {{ order.place }}<br>
+                            <b>Correo:</b> {{ order.email }}<br>
+                            <b>Teléfono:</b> {{ order.phone }}
+    
+                            <table class="table is-fullwidth mt-4">
+                                <thead>
+                                    <tr>
+                                        <th>Título</th>
+                                        <th>Precio</th>
+                                        <th>Cantidad</th>
+                                        <th>Pagado</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+    
+                                <tbody>
+                                    {% for item in order.items.all %}
+                                        {% if item.vendor == request.user.vendor %}
+                                            <tr>
+                                                <td>{{ item.product.title }}</td>
+                                                <td>${{ item.product.price }}</td>
+                                                <td>{{ item.quantity }}</td>
+                                                <td>{{ item.vendor_paid|yesno:"Sí,No" }}</td>
+                                                <td>${{ item.get_total_price }}</td>
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+{% endblock content %}
