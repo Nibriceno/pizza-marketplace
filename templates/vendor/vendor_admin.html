@@ -1,14 +1,15 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Administración de Vendedor{% endblock title %}
+{% block title %}Administración de Usuario{% endblock title %}
 
 {% block content %}
 
-    <h1 class="title">Administración de Vendedor - <span class="is-capitalized">{{vendor.name}}</span></h1>
+{% if is_vendor %}
+    <h1 class="title">Administración de Vendedor - <span class="is-capitalized">{{ vendor.name }}</span></h1>
 
     <div class="mb-5">
-        <strong>Mi Saldo: </strong> ${{vendor.get_balance}} <br>
-        <strong>Monto Pagado: </strong> ${{vendor.get_paid_amount}} 
+        <strong>Mi Saldo: </strong> ${{ vendor.get_balance }} <br>
+        <strong>Monto Pagado: </strong> ${{ vendor.get_paid_amount }} 
     </div>
 
     <div class="box">
@@ -104,7 +105,14 @@
                     </div>
                 </div>
             {% endfor %}
+        {% else %}
+            <p class="has-text-danger">Aún no tienes pedidos.</p>
         {% endif %}
     </div>
+
+{% else %}
+    <h1 class="title">Perfil de Usuario 👤</h1>
+    <p><strong>Nombre de usuario:</strong> {{ username }}</p>
+{% endif %}
 
 {% endblock content %}

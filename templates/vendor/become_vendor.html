@@ -1,20 +1,172 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Become Vendor {% endblock title %}
+{% block title %}Registrarse{% endblock title %}
 
 {% block content %}
-
-    <h1 class="title">Hazte vendedor</h1>
+<div class="container mt-5" style="max-width: 900px;">
+    <h1 class="title has-text-centered mb-5">Hazte vendedor o cliente</h1>
 
     <form method="post" action="">
         {% csrf_token %}
 
-        {{ form.as_p }}
+        <div class="columns is-multiline">
 
-        <div class="field">
-            <div class="control">
-                <button class="button is-dark is-uppercase">Registrarse</button>
+            <!-- 🧑 Datos de usuario -->
+            <div class="column is-half">
+                <div class="field">
+                    {{ form.username.label_tag }}
+                    <div class="control">{{ form.username }}</div>
+                    {{ form.username.errors }}
+                </div>
             </div>
+
+            <div class="column is-half">
+                <div class="field">
+                    {{ form.email.label_tag }}
+                    <div class="control">{{ form.email }}</div>
+                    {{ form.email.errors }}
+                </div>
+            </div>
+
+            <div class="column is-half">
+                <div class="field">
+                    {{ form.first_name.label_tag }}
+                    <div class="control">{{ form.first_name }}</div>
+                    {{ form.first_name.errors }}
+                </div>
+            </div>
+
+            <div class="column is-half">
+                <div class="field">
+                    {{ form.last_name.label_tag }}
+                    <div class="control">{{ form.last_name }}</div>
+                    {{ form.last_name.errors }}
+                </div>
+            </div>
+
+            <div class="column is-half">
+                <div class="field">
+                    {{ form.country.label_tag }}
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            {{ form.country }}
+                        </div>
+                    </div>
+                    {{ form.country.errors }}
+                </div>
+            </div>
+
+            <div class="column is-half">
+                <div class="field">
+                    {{ form.phone.label_tag }}
+                    <div class="control">{{ form.phone }}</div>
+                    {{ form.phone.errors }}
+                </div>
+            </div>
+
+            <div class="column is-half">
+                <div class="field">
+                    {{ form.address.label_tag }}
+                    <div class="control">{{ form.address }}</div>
+                    {{ form.address.errors }}
+                </div>
+            </div>
+
+            <div class="column is-half">
+                <div class="field">
+                    {{ form.zipcode.label_tag }}
+                    <div class="control">{{ form.zipcode }}</div>
+                    {{ form.zipcode.errors }}
+                </div>
+            </div>
+
+            <div class="column is-half">
+                <div class="field">
+                    {{ form.place.label_tag }}
+                    <div class="control">{{ form.place }}</div>
+                    {{ form.place.errors }}
+                </div>
+            </div>
+
+            <div class="column is-half">
+                <div class="field">
+                    {{ form.password1.label_tag }}
+                    <div class="control">{{ form.password1 }}</div>
+                    {{ form.password1.errors }}
+                </div>
+            </div>
+
+            <div class="column is-half">
+                <div class="field">
+                    {{ form.password2.label_tag }}
+                    <div class="control">{{ form.password2 }}</div>
+                    {{ form.password2.errors }}
+                </div>
+            </div>
+
+            <!-- 🏪 Opción vendedor -->
+            <div class="column is-half">
+                <div class="field mt-4">
+                    <label class="checkbox">
+                        <input type="checkbox" name="is_vendor">
+                        Quiero registrarme como vendedor
+                    </label>
+                </div>
+            </div>
+
+            <div class="column is-half">
+                <div class="field">
+                    <label class="label">Nombre de la tienda (opcional)</label>
+                    <div class="control">
+                        <input class="input" type="text" name="store_name" placeholder="Ej: Pizzería Don Juan">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 🚀 Botón final -->
+        <div class="control mt-5">
+            <button type="submit" class="button is-primary is-fullwidth">
+                Registrarme
+            </button>
         </div>
     </form>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const countrySelect = document.getElementById('id_country');
+    const phoneInput = document.getElementById('id_phone');
+
+    async function applyCode() {
+      const id = countrySelect.value;
+      if (!id) return;
+      const res = await fetch(`/api/countries/${id}/`);
+      const data = await res.json();
+      const code = data.phone_code;
+
+      phoneInput.placeholder = `${code} ...`;
+      if (!phoneInput.value.startsWith(code)) {
+        phoneInput.value = code + ' ';
+      }
+
+      phoneInput.addEventListener('keydown', (e) => {
+        const prefix = code + ' ';
+        const selStart = phoneInput.selectionStart;
+
+        if ((e.key === 'Backspace' && selStart <= prefix.length) ||
+            (e.key === 'Delete' && selStart < prefix.length)) {
+          e.preventDefault();
+          phoneInput.setSelectionRange(prefix.length, prefix.length);
+        }
+      });
+    }
+
+    if (countrySelect) {
+      countrySelect.addEventListener('change', applyCode);
+      if (countrySelect.value) applyCode();
+    }
+  });
+</script>
 {% endblock content %}

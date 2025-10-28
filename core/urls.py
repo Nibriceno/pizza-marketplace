@@ -7,4 +7,5 @@ app_name = 'core'
 urlpatterns = [
     path('', views.frontpage, name="home"),
     path('contact-us/', views.contactpage, name="contact"),
+    path('api/countries/<int:pk>/', views.get_country_phone_code, name='get_country_phone_code'),
 ]

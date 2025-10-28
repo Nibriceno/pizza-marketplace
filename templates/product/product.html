@@ -1,22 +1,26 @@
 {% extends 'core/base.html' %}
 
-{% block title %}{{product.title}}{% endblock title %}
+{% block title %}{{ product.title }}{% endblock title %}
 
 {% block content %}
 
     {% if product.image %}
         <figure class="image mb-6" style="max-width: 350px; height: auto; margin-bottom: 25px; text-align: left;">
-            <img src="{{product.image.url}}" alt="{{product.title}}" style="width: 100%; height: auto;">
+            <img src="{{ product.image.url }}" alt="{{ product.title }}" style="width: 100%; height: auto;">
         </figure>
     {% endif %}
 
-    <h1 class="title">{{product.title}}, ${{product.price}}</h1>
+    <!-- 🪙 Aquí cambiamos el precio para mostrar la moneda dinámica -->
+    <h1 class="title">
+        {{ product.title }}, {{ currency_symbol }}{{ product.price }} 
+        <span style="font-size: 0.9em; color: #777;">{{ currency_code }}</span>
+    </h1>
 
     <p class="mb-6">
         <span class="tag is-dark">{{ product.vendor.name }}</span>
     </p>
 
-    <p>{{product.description}}</p>
+    <p>{{ product.description }}</p>
 
     <hr>
 
@@ -28,12 +32,10 @@
 
     <form method="post" action="">
         {% csrf_token %}
-
         <div class="field has-addons">
             <div class="control">
-                <input type="number" name="quantity" value="1" class="input" min="1" id="">
+                <input type="number" name="quantity" value="1" class="input" min="1">
             </div>
-
             <div class="control">
                 <button class="button is-dark is-uppercase">Agregar al Carrito</button>
             </div>
@@ -42,7 +44,6 @@
 
     {% if similar_products %}
         <hr>
-
         <div class="columns is-multiline">
             <div class="column is-12">
                 <h2 class="subtitle">Productos Similares</h2>
@@ -55,4 +56,3 @@
     {% endif %}
 
 {% endblock content %}
-

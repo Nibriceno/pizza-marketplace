@@ -1,20 +1,63 @@
 {% extends 'core/base.html' %}
+{% load widget_tweaks %}
 
-{% block title %}Vendor Login{% endblock title %}
+{% block title %}Iniciar sesión{% endblock title %}
 
 {% block content %}
+<div class="container mt-6" style="max-width: 450px;">
+    <h1 class="title has-text-centered">Iniciar sesión</h1>
+    <p class="subtitle has-text-centered mb-5">Accede a tu cuenta</p>
 
-    <h1 class="title">Vendor Login</h1>
-
-    <form method="post" action="">
+    <form method="post" action="" class="box">
         {% csrf_token %}
 
-        {{ form.as_p }}
-
+        {# Usuario #}
         <div class="field">
+            <label class="label">Usuario</label>
+            <div class="control has-icons-left">
+                {{ form.username|add_class:"input is-fullwidth" }}
+                <span class="icon is-small is-left">
+                    <i class="fas fa-user"></i>
+                </span>
+            </div>
+            <p class="help is-danger">{{ form.username.errors }}</p>
+        </div>
+
+        {# Contraseña #}
+        <div class="field">
+            <label class="label">Contraseña</label>
+            <div class="control has-icons-left">
+                {{ form.password|add_class:"input is-fullwidth" }}
+                <span class="icon is-small is-left">
+                    <i class="fas fa-lock"></i>
+                </span>
+            </div>
+            <p class="help is-danger">{{ form.password.errors }}</p>
+        </div>
+
+        {# Botón de inicio de sesión #}
+        <div class="field mt-4">
             <div class="control">
-                <button class="button is-dark is-uppercase">Log In</button>
+                <button type="submit" class="button is-primary is-fullwidth is-uppercase">
+                    Iniciar sesión
+                </button>
             </div>
         </div>
     </form>
+
+    <p class="has-text-centered mt-3">
+        ¿No tienes cuenta?
+        <a href="{% url 'vendor:become-vendor' %}">Regístrate aquí</a>
+    </p>
+</div>
+
+<!-- ✨ Estilos adicionales -->
+<style>
+    input.input {
+        border-radius: 8px;
+    }
+</style>
+
+<!-- Si usas íconos de Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 {% endblock content %}

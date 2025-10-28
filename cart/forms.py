@@ -1,15 +1,38 @@
+
 from django import forms
-from django.forms.fields import CharField
 
 class CheckoutForm(forms.Form):
-    first_name = forms.CharField(max_length=255)
-    last_name = forms.CharField(max_length=255)
-    email = forms.EmailField(max_length=255)
-    phone = forms.CharField(max_length=255)
-    address = forms.CharField(max_length=255)
-    zipcode = forms.CharField(max_length=255)
-    place = forms.CharField(max_length=255)
-    #stripe_token = forms.CharField(max_length=255)
-
+    first_name = forms.CharField(
+        label='Nombre',
+        widget=forms.TextInput(attrs={'class': 'input', 'placeholder': 'Ej: Nicolás'})
+    )
+    last_name = forms.CharField(
+        label='Apellido',
+        widget=forms.TextInput(attrs={'class': 'input'})
+    )
+    email = forms.EmailField(
+        label='Correo electrónico',
+        widget=forms.EmailInput(attrs={'class': 'input'})
+    )
+    phone = forms.CharField(
+        label='Teléfono',
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'input'})
+    )
+    address = forms.CharField(
+        label='Dirección',
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'input'})
+    )
+    zipcode = forms.CharField(
+        label='Código Postal',
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'input'})
+    )
+    place = forms.CharField(
+        label='Ciudad / Localidad',
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'input'})
+    )
 
 

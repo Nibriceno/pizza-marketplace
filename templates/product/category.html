@@ -1,15 +1,21 @@
 {% extends 'core/base.html' %}
 
-{% block title %}{{category.title}}{% endblock title %}
+{% block title %}{{ category.title }}{% endblock title %}
 
 {% block content %}
     <div class="columns is-multiline mb-6">
-        <div class="column is-12 has-test-centered mt-6 mb-6">
-            <h2 class="is-size-3">{{category.title}}</h2>
+        <div class="column is-12 has-text-centered mt-6 mb-6">
+            <h2 class="is-size-3">{{ category.title }}</h2>
         </div>
 
-        {% for product in category.products.all %}
+        {% for product in products %}
             {% include 'product/parts/list_item.html' %}
+        {% empty %}
+            <div class="column is-12 has-text-centered">
+                <p class="has-text-grey">
+                    🚫 No hay productos disponibles en tu país para esta categoría.
+                </p>
+            </div>
         {% endfor %}
     </div>
 {% endblock content %}

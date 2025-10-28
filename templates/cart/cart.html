@@ -3,168 +3,65 @@
 {% block title %}Carrito{% endblock title %}
 
 {% block content %}
-
 <h1 class="title">Carrito</h1>
 
 {% if cart %}
-
     <div class="box mb-6">
-        <div class="table">
-            <table class="table is-fullwidth is-striped">
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>Producto</th>
-                        <th>Cantidad</th>
-                        <th>Precio</th>
-                        <th></th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    {% for item in cart %}
-                    <tr>
-                        <td>
-                            <figure class="image is-64x64">
-                                <img src="{{ item.product.get_thumbnail }}" alt="{{ item.product.title }}">
-                            </figure>
-                        </td>
-                        <td>
-                            <a href="{% url 'product:product' item.product.category.slug item.product.slug %}">
-                                {{ item.product.title }}
-                            </a>
-                        </td>
-                        <td>
-                            ${{ item.quantity }}
-                            <a href="?change_quantity={{ item.id }}&quantity=-1">-</a>
-                            <a href="?change_quantity={{ item.id }}&quantity=1">+</a>
-                        </td>
-                        <td>${{ item.total_price }}</td>
-                        <td>
-                            <a href="?remove_from_cart={{ item.id }}" class="delete">Eliminar</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-
-                <tfoot>
-                    <tr>
-                        <td></td>
-                        <td><strong>Total</strong></td>
-                        <td><strong>{{ cart|length }}</strong></td>
-                        <td colspan="2">${{ cart.get_total_cost }}</td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+        <table class="table is-fullwidth is-striped">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cart %}
+                <tr>
+                    <td><img src="{{ item.product.get_thumbnail }}" alt="{{ item.product.title }}" style="width:64px"></td>
+                    <td>{{ item.product.title }}</td>
+                    <td>
+                        ${{ item.quantity }}
+                        <a href="?change_quantity={{ item.id }}&quantity=-1">-</a>
+                        <a href="?change_quantity={{ item.id }}&quantity=1">+</a>
+                    </td>
+                    <td>${{ item.total_price }}</td>
+                    <td>
+                        <a href="?remove_from_cart={{ item.id }}" class="delete">Eliminar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td></td>
+                    <td><strong>Total</strong></td>
+                    <td><strong>{{ cart|length }}</strong></td>
+                    <td colspan="2">${{ cart.get_total_cost }}</td>
+                </tr>
+            </tfoot>
+        </table>
     </div>
 
     <h2 class="subtitle">Información de contacto</h2>
-
-    <form method="post" action="" id="payment-form">
+    <form method="post" action="">
         {% csrf_token %}
-
-        {% if form.non_field_errors %}
-        <div class="notification is-danger">
-            {{ form.non_field_errors }}
-        </div>
-        {% endif %}
-
-        {% if form.errors %}
-        <div class="notification is-danger">
-            <ul>
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <li><strong>{{ field.label }}</strong> {{ error }}</li>
-                    {% endfor %}
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-
-        <div class="columns">
-            <div class="column is-6">
-                <div class="field">
-                    <label>Nombre</label>
-                    <div class="control">
-                        <input type="text" name="first_name" class="input" required>
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label>Apellido</label>
-                    <div class="control">
-                        <input type="text" name="last_name" class="input" required>
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label>Correo electrónico</label>
-                    <div class="control">
-                        <input type="email" name="email" class="input" required>
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label>Teléfono</label>
-                    <div class="control">
-                        <input type="text" name="phone" class="input">
-                    </div>
-                </div>
-            </div>
-
-            <div class="column is-6">
-                <div class="field">
-                    <label>Dirección</label>
-                    <div class="control">
-                        <input type="text" name="address" class="input">
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label>Código Postal</label>
-                    <div class="control">
-                        <input type="text" name="zipcode" class="input">
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label>Ciudad / Localidad</label>
-                    <div class="control">
-                        <input type="text" name="place" class="input">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {% if messages %}
-            {% for message in messages %}
-                <div class="notification is-danger">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-
+        {{ form.as_p }}
         <div class="field mt-5 has-text-centered">
-            <div class="control">
-                <button type="submit" class="button is-link is-medium is-uppercase">
-                    Pagar con Mercado Pago 💳
-                </button>
-            </div>
+            <button type="submit" class="button is-primary is-large is-fullwidth">
+                💳 Pagar con Mercado Pago
+            </button>
         </div>
     </form>
 
+    {% if messages %}
+        {% for message in messages %}
+            <div class="notification is-danger">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
 {% else %}
-
     <p>No tienes productos en tu carrito.</p>
-
 {% endif %}
-
 {% endblock content %}
-
-
-{% block scripts %}
-<!-- SDK de Mercado Pago -->
-<script src="https://sdk.mercadopago.com/js/v2"></script>
-<script>
-    const mp = new MercadoPago("{{ mp_public_key }}", { locale: 'es-CL'});
-</script>
-{% endblock scripts %}
