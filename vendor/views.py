@@ -1,38 +1,26 @@
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
-from django.utils.text import slugify
-from .forms import SignUpForm
-
-from .models import Vendor
+from django.utils.text import slugify  
+from .forms import SignUpForm, ProductForm
+from .models import Vendor, Profile
 from product.models import Product
-from .forms import ProductForm
 
-#  Vista de registro general (cliente o vendedor)
-def register_view(request):
+
+# 🧍 Registro de cliente
+def register_customer_view(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
-        is_vendor = request.POST.get('is_vendor') == 'on'
-        store_name = request.POST.get('store_name', '')
 
         if form.is_valid():
             user = form.save()
             login(request, user)
-
-            # Si seleccionó “ser vendedor”, creamos Vendor asociado
-            if is_vendor:
-                Vendor.objects.create(
-                    name=store_name if store_name else user.username,
-                    created_by=user
-                )
-
             return redirect('core:home')
 
     else:
         form = SignUpForm()
 
-    # Personalizar campos del formulario (placeholders + labels)
+    # 🎨 Personalización visual
     for field_name, field in form.fields.items():
         field.widget.attrs['class'] = 'input'
         placeholders = {
@@ -40,33 +28,65 @@ def register_view(request):
             'first_name': 'Nombre',
             'last_name': 'Apellido',
             'email': 'Correo electrónico',
-            'country': 'Selecciona tu país',              # 👈 agregado
+            'country': 'Selecciona tu país',
             'phone': '+56 9 12345678',
             'address': 'Dirección',
             'zipcode': 'Código postal',
-            'place': 'Ciudad o localidad',
-            'password1': 'Contraseña',
-            'password2': 'Confirmar contraseña'
-        }
-        labels = {
-            'username': 'Nombre de usuario',
-            'first_name': 'Nombre',
-            'last_name': 'Apellido',
-            'email': 'Correo electrónico',
-            'country': 'País',                            # 👈 agregado
-            'phone': 'Teléfono (formato WhatsApp)',
-            'address': 'Dirección',
-            'zipcode': 'Código postal',
-            'place': 'Ciudad',
             'password1': 'Contraseña',
             'password2': 'Confirmar contraseña'
         }
         if field_name in placeholders:
             field.widget.attrs['placeholder'] = placeholders[field_name]
-        if field_name in labels:
-            field.label = labels[field_name]
+
+    return render(request, 'vendor/become_customer.html', {'form': form})
+
+
+# 🏪 Registro de vendedor
+def register_vendor_view(request):
+    if request.method == 'POST':
+        form = SignUpForm(request.POST)
+        store_name = request.POST.get('store_name', '')
+
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+
+            # 🔍 Obtener el país del Profile
+            profile = Profile.objects.get(user=user)
+            country = profile.country
+
+            # 🧑‍🍳 Crear automáticamente el Vendor
+            Vendor.objects.create(
+                name=store_name if store_name else user.username,
+                created_by=user,
+                country=country
+            )
+
+            return redirect('core:home')
+
+    else:
+        form = SignUpForm()
+
+    # 🎨 Personalización visual
+    for field_name, field in form.fields.items():
+        field.widget.attrs['class'] = 'input'
+        placeholders = {
+            'username': 'Nombre de usuario',
+            'first_name': 'Nombre',
+            'last_name': 'Apellido',
+            'email': 'Correo electrónico',
+            'country': 'Selecciona tu país',
+            'phone': '+56 9 12345678',
+            'address': 'Dirección',
+            'zipcode': 'Código postal',
+            'password1': 'Contraseña',
+            'password2': 'Confirmar contraseña'
+        }
+        if field_name in placeholders:
+            field.widget.attrs['placeholder'] = placeholders[field_name]
 
     return render(request, 'vendor/become_vendor.html', {'form': form})
+
 
 #  Panel del vendedor
 @login_required
@@ -166,3 +186,5 @@ def vendors(request):
 def vendor(request, vendor_id):
     vendor = get_object_or_404(Vendor, pk=vendor_id)
     return render(request, 'vendor/vendor.html', {'vendor': vendor})
+
+

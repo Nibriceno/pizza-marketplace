@@ -9,7 +9,9 @@ app_name = 'vendor'
 
 urlpatterns = [
     path('', views.vendors, name="vendors"),
-    path('become-vendor/', views.register_view, name="become-vendor"),
+    path('become-vendor/', views.register_vendor_view, name="become-vendor"),
+    path('become-customer/', views.register_customer_view, name="become-customer"),
+
     path('vendor-admin/', views.vendor_admin, name="vendor-admin"),
     path('edit-vendor/', views.edit_vendor, name="edit-vendor"),
 

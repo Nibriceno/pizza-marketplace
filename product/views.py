@@ -6,6 +6,7 @@ from product.models import Product
 from .models import Category, Product
 from .forms import AddToCartForm
 from cart.cart import Cart
+from core.models import Country
 
 
 def product(request, category_slug, product_slug):
@@ -63,21 +64,40 @@ def product(request, category_slug, product_slug):
     return render(request, 'product/product.html', context)
 
 
-# ✅ Vista para mostrar una categoría de productos
+from core.models import Country
+from django.shortcuts import render, get_object_or_404
+from .models import Category, Product
+
 def category(request, category_slug):
     category = get_object_or_404(Category, slug=category_slug)
-    products = category.products.all()
+    products = []
 
-    # 🧭 Si el usuario está logueado y tiene país
+    # 🔓 Si el usuario está logueado → usar su país
     if request.user.is_authenticated and hasattr(request.user, 'profile') and request.user.profile.country:
         user_country = request.user.profile.country
-        products = products.filter(vendor__country=user_country)
+        products = Product.objects.filter(
+            category=category,
+            vendor__created_by__profile__country=user_country
+        )
 
-    context = {
+    # 🔒 Si no está logueado → usar país de sesión
+    else:
+        country_id = request.session.get('selected_country')
+        if country_id:
+            try:
+                country = Country.objects.get(id=country_id)
+                products = Product.objects.filter(
+                    category=category,
+                    vendor__created_by__profile__country=country
+                )
+            except Country.DoesNotExist:
+                products = []
+
+    return render(request, 'product/category.html', {
         'category': category,
         'products': products,
-    }
-    return render(request, 'product/category.html', context)
+    })
+
 
 
 # ✅ Vista para búsqueda de productos

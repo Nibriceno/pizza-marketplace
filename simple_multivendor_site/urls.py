@@ -7,6 +7,8 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
 
+    path('location/', include('location.urls')), 
+
     # 🏠 Página principal: core (frontpage)
     path('', include('core.urls')),
 

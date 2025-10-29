@@ -8,7 +8,12 @@ def frontpage(request):
     countries = Country.objects.all()
     selected_country = request.GET.get('country')
 
-    # Por defecto: mostrar todos los productos ordenados
+    # 🧠 Si el usuario selecciona un país, guardarlo en la sesión
+    if selected_country:
+        request.session['selected_country'] = selected_country
+    else:
+        selected_country = request.session.get('selected_country')
+
     newest_products = Product.objects.all().order_by('-id')
 
     # 🔒 Si el usuario NO está logueado
@@ -16,21 +21,23 @@ def frontpage(request):
         if selected_country:
             try:
                 country = Country.objects.get(id=selected_country)
-                # Filtrar productos del país seleccionado
-                newest_products = newest_products.filter(vendor__created_by__profile__country=country)
+                newest_products = newest_products.filter(
+                    vendor__created_by__profile__country=country
+                )
             except Country.DoesNotExist:
                 newest_products = []
         else:
-            # No mostrar productos hasta elegir país
             newest_products = []
     else:
-        # 🔓 Si el usuario está logueado y tiene país en su perfil
+        # 🔓 Si el usuario está logueado y tiene país
         if hasattr(request.user, 'profile') and request.user.profile.country:
             user_country = request.user.profile.country
-            newest_products = newest_products.filter(vendor__created_by__profile__country=user_country)
+            newest_products = newest_products.filter(
+                vendor__created_by__profile__country=user_country
+            )
             selected_country = user_country.id
+            request.session['selected_country'] = user_country.id  # guarda en sesión también
 
-    # 🪄 Limitar a 8 productos recientes
     newest_products = newest_products[:8]
 
     context = {

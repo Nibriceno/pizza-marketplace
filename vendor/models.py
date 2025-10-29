@@ -3,6 +3,7 @@ from django.db import models
 from django.db.models.fields.related import OneToOneField
 from phonenumber_field.modelfields import PhoneNumberField
 from core.models import Country 
+from location.models import Region, Provincia, Comuna
 
 # Create your models here.
 
@@ -30,11 +31,26 @@ class Vendor(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    # 🌍 País y localización geográfica
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True)
-    phone = PhoneNumberField(region='CL')
+    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
+    provincia = models.ForeignKey(Provincia, on_delete=models.SET_NULL, null=True, blank=True)
+    comuna = models.ForeignKey(Comuna, on_delete=models.SET_NULL, null=True, blank=True)
+
+    # 🏠 Información de contacto
+    phone = PhoneNumberField(region='CL', blank=True)
     address = models.CharField(max_length=255)
     zipcode = models.CharField(max_length=255)
-    place = models.CharField(max_length=255)
+
+    # 🕒 Fechas
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.user.username
+
+    class Meta:
+        verbose_name = "Perfil"
+        verbose_name_plural = "Perfiles"
+        ordering = ['user__username']

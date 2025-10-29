@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'cart',
     'order',
     'widget_tweaks',
+    'location',
     
 ]
 
