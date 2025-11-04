@@ -35,21 +35,24 @@
                     {% endfor %}
 
                     <!-- 🖱️ Botones -->
-                    <div class="field is-grouped is-grouped-centered mt-5">
-                        <div class="control">
-                            <button class="button is-primary is-uppercase is-medium">
-                                <span class="icon">
-                                    <i class="fas fa-plus"></i>
-                                </span>
-                                <span>Agregar producto</span>
-                            </button>
-                        </div>
-                        <div class="control">
-                            <a href="{% url 'vendor:vendor-admin' %}" class="button is-light is-uppercase is-medium">
-                                Cancelar
-                            </a>
-                        </div>
-                    </div>
+                                <div class="field mt-5">
+                                    <div class="columns is-variable is-2 is-mobile is-centered is-multiline">
+                                        <div class="column is-full-mobile is-half-tablet is-one-third-desktop">
+                                            <button class="button is-primary is-uppercase is-medium is-fullwidth">
+                                                <span class="icon">
+                                                    <i class="fas fa-plus"></i>
+                                                </span>
+                                                <span>Agregar producto</span>
+                                            </button>
+                                        </div>
+                                        <div class="column is-full-mobile is-half-tablet is-one-third-desktop">
+                                            <a href="{% url 'vendor:vendor-admin' %}" class="button is-light is-uppercase is-medium is-fullwidth">
+                                                Cancelar
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
                 </form>
 
             </div>

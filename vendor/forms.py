@@ -10,10 +10,18 @@ from django.forms import ModelForm
 from location.models import Region, Provincia, Comuna
 
 
-class ProductForm(ModelForm):
+class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['category', 'image', 'title', 'description', 'price']
+        fields = ['title', 'category', 'description', 'price', 'image']
+        labels = {
+            'title': 'Nombre del producto',
+            'category': 'Categoría',
+            'description': 'Descripción',
+            'price': 'Precio',
+            'image': 'Imagen del producto',
+        }
+
 
 
 class SignUpForm(UserCreationForm):
@@ -87,7 +95,7 @@ class SignUpForm(UserCreationForm):
         # Placeholders amigables
         placeholders = {
             'username': 'Nombre de usuario',
-            'first_name': 'Nombre',
+            'Primer nombre': 'Nombre',
             'last_name': 'Apellido',
             'email': 'Correo electrónico',
             'phone': '+56 9 1234 5678',

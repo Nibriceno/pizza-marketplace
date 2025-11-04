@@ -6,6 +6,8 @@ from django.contrib.auth.decorators import login_required
 from .cart import Cart
 from .forms import CheckoutForm
 from order.utilities import checkout, notify_vendor, notify_customer
+from botapi.models import TempCart
+
 
 @login_required
 def cart_detail(request):
@@ -148,4 +150,29 @@ def failure(request):
 #  Vista de pago pendiente
 def pending(request):
     messages.info(request, "El pago está pendiente de confirmación.")
+    return redirect('cart:cart')
+
+
+@login_required
+def checkout_start(request):
+    token = request.GET.get("cart_token")
+    if not token:
+        messages.error(request, "Carrito no encontrado.")
+        return redirect('cart:cart')
+
+    try:
+        temp_cart = TempCart.objects.get(token=token)
+    except TempCart.DoesNotExist:
+        messages.error(request, "El carrito ya expiró o no existe.")
+        return redirect('cart:cart')
+
+    # Cargar los productos del carrito temporal al carrito real del usuario
+    cart = Cart(request)
+    for item in temp_cart.items.all():
+        cart.add(item.product.id, item.quantity)
+
+    # Borrar el carrito temporal
+    temp_cart.delete()
+
+    # Redirigir al detalle del carrito (ya con productos cargados)
     return redirect('cart:cart')

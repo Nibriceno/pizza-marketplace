@@ -22,6 +22,10 @@ ALLOWED_HOSTS = [
     'nonfimbriate-usha-aerobically.ngrok-free.dev'
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://nonfimbriate-usha-aerobically.ngrok-free.dev",
+    "https://nicolasbriceno.pythonanywhere.com"
+]
 
 # 📦 Apps instaladas
 INSTALLED_APPS = [
@@ -38,6 +42,7 @@ INSTALLED_APPS = [
     'order',
     'widget_tweaks',
     'location',
+    'botapi',
     
 ]
 

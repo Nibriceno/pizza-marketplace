@@ -12,6 +12,9 @@ urlpatterns = [
     # 🏠 Página principal: core (frontpage)
     path('', include('core.urls')),
 
+    path("api/", include("botapi.urls")),
+
+
     # 🧭 Rutas específicas: ponlas antes de product
     path('vendor/', include('vendor.urls')),
     path('cart/', include('cart.urls')),

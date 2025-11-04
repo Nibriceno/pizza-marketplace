@@ -46,8 +46,10 @@
     </form>
 
     <p class="has-text-centered mt-3">
-        ¿No tienes cuenta?
-        <a href="{% url 'vendor:become-vendor' %}">Regístrate aquí</a>
+        ¿No tienes cuenta? <br>
+        <a href="{% url 'vendor:become-customer' %}" class="has-text-primary has-text-weight-semibold">Regístrate como cliente</a>
+        <span> o </span>
+        <a href="{% url 'vendor:become-vendor' %}" class="has-text-primary has-text-weight-semibold">como vendedor</a>
     </p>
 </div>
 

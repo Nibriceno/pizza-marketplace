@@ -190,7 +190,7 @@
             <div class="content has-text-centered">
                 <h3 class="is-size-4 mb-4">🍕 Pizza Marketplace</h3>
                 {% if request.user.is_authenticated %}
-                    <a href="{% url 'vendor:vendor-admin' %}">Vendedor Admin</a>
+                    
                 {% else %}
                     <a href="{% url 'vendor:become-vendor' %}">Hazte Vendedor</a>
                 {% endif %}

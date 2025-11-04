@@ -13,7 +13,7 @@
       <!-- 🧑 Datos de usuario -->
       <div class="column is-half">
         <div class="field">
-          {{ form.username.label_tag }}
+          <label for="{{ form.username.id_for_label }}" class="label">Nombre de usuario</label>
           <div class="control">{{ form.username }}</div>
           {{ form.username.errors }}
         </div>
@@ -21,7 +21,7 @@
 
       <div class="column is-half">
         <div class="field">
-          {{ form.email.label_tag }}
+          <label for="{{ form.email.id_for_label }}" class="label">Correo electrónico</label>
           <div class="control">{{ form.email }}</div>
           {{ form.email.errors }}
         </div>
@@ -29,7 +29,7 @@
 
       <div class="column is-half">
         <div class="field">
-          {{ form.first_name.label_tag }}
+          <label for="{{ form.first_name.id_for_label }}" class="label">Nombre</label>
           <div class="control">{{ form.first_name }}</div>
           {{ form.first_name.errors }}
         </div>
@@ -37,7 +37,7 @@
 
       <div class="column is-half">
         <div class="field">
-          {{ form.last_name.label_tag }}
+          <label for="{{ form.last_name.id_for_label }}" class="label">Apellido</label>
           <div class="control">{{ form.last_name }}</div>
           {{ form.last_name.errors }}
         </div>
@@ -46,7 +46,7 @@
       <!-- 🌎 País -->
       <div class="column is-half">
         <div class="field">
-          {{ form.country.label_tag }}
+          <label for="{{ form.country.id_for_label }}" class="label">País</label>
           <div class="control">
             <div class="select is-fullwidth">
               {{ form.country }}
@@ -58,33 +58,16 @@
 
       <div class="column is-half">
         <div class="field">
-          {{ form.phone.label_tag }}
+          <label for="{{ form.phone.id_for_label }}" class="label">Teléfono</label>
           <div class="control">{{ form.phone }}</div>
           {{ form.phone.errors }}
-        </div>
-      </div>
-
-      <!-- 🏠 Dirección -->
-      <div class="column is-half">
-        <div class="field">
-          {{ form.address.label_tag }}
-          <div class="control">{{ form.address }}</div>
-          {{ form.address.errors }}
-        </div>
-      </div>
-
-      <div class="column is-half">
-        <div class="field">
-          {{ form.zipcode.label_tag }}
-          <div class="control">{{ form.zipcode }}</div>
-          {{ form.zipcode.errors }}
         </div>
       </div>
 
       <!-- 🗺️ Región, Provincia, Comuna -->
       <div class="column is-one-third">
         <div class="field">
-          {{ form.region.label_tag }}
+          <label for="{{ form.region.id_for_label }}" class="label">Región</label>
           <div class="control">
             <div class="select is-fullwidth">{{ form.region }}</div>
           </div>
@@ -94,7 +77,7 @@
 
       <div class="column is-one-third">
         <div class="field">
-          {{ form.provincia.label_tag }}
+          <label for="{{ form.provincia.id_for_label }}" class="label">Provincia</label>
           <div class="control">
             <div class="select is-fullwidth">{{ form.provincia }}</div>
           </div>
@@ -104,11 +87,28 @@
 
       <div class="column is-one-third">
         <div class="field">
-          {{ form.comuna.label_tag }}
+          <label for="{{ form.comuna.id_for_label }}" class="label">Comuna</label>
           <div class="control">
             <div class="select is-fullwidth">{{ form.comuna }}</div>
           </div>
           {{ form.comuna.errors }}
+        </div>
+      </div>
+
+            <!-- 🏠 Dirección -->
+      <div class="column is-half">
+        <div class="field">
+          <label for="{{ form.address.id_for_label }}" class="label">Dirección</label>
+          <div class="control">{{ form.address }}</div>
+          {{ form.address.errors }}
+        </div>
+      </div>
+
+      <div class="column is-half">
+        <div class="field">
+          <label for="{{ form.zipcode.id_for_label }}" class="label">Código postal</label>
+          <div class="control">{{ form.zipcode }}</div>
+          {{ form.zipcode.errors }}
         </div>
       </div>
 
@@ -125,7 +125,7 @@
       <!-- 🔑 Contraseñas -->
       <div class="column is-half">
         <div class="field">
-          {{ form.password1.label_tag }}
+          <label for="{{ form.password1.id_for_label }}" class="label">Contraseña</label>
           <div class="control">{{ form.password1 }}</div>
           {{ form.password1.errors }}
         </div>
@@ -133,7 +133,7 @@
 
       <div class="column is-half">
         <div class="field">
-          {{ form.password2.label_tag }}
+          <label for="{{ form.password2.id_for_label }}" class="label">Confirmar contraseña</label>
           <div class="control">{{ form.password2 }}</div>
           {{ form.password2.errors }}
         </div>
