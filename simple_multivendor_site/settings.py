@@ -130,16 +130,15 @@ STRIPE_PUB_KEY = 'pk_test_OKdhbDNME5KHtnpzYRBfNmEZ00mjM6DVsJ'  # publica
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 
 # 📧 Email (ajústalo si usarás notificaciones)
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'YOUR-EMAIL'
-EMAIL_HOST_PASSWORD = 'YOUR-EMAIL-PASSWORD'
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-DEFAULT_EMAIL_FROM = 'Multi Vendor Site <YOUR-EMAIL>'
+EMAIL_HOST_USER = "nicolas.bricenocq@gmail.com"
+EMAIL_HOST_PASSWORD = "kqqqfatfoabsxasd"  # tu nueva contraseña de aplicación, sin espacios
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
 
 # 💳 Mercado Pago
 MERCADOPAGO_PUBLIC_KEY = os.getenv('MERCADOPAGO_PUBLIC_KEY', '')
 MERCADOPAGO_ACCESS_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN', '')
-
-

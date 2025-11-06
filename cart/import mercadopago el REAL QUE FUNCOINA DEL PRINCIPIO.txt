@@ -1,14 +1,11 @@
 import mercadopago
-import json
 from django.conf import settings
 from django.contrib import messages
 from django.shortcuts import redirect, render
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
 from .cart import Cart
 from .forms import CheckoutForm
-from order.utilities import checkout
+from order.utilities import checkout, notify_vendor, notify_customer
 from botapi.models import TempCart
 
 
@@ -16,7 +13,7 @@ from botapi.models import TempCart
 def cart_detail(request):
     cart = Cart(request)
 
-    # 🧩 Autocompletar datos desde el perfil (si existe)
+    #  Autocompletar datos desde el perfil (si existe)
     initial_data = {}
     if request.user.is_authenticated:
         initial_data['first_name'] = request.user.first_name or ''
@@ -29,11 +26,11 @@ def cart_detail(request):
             initial_data['zipcode'] = getattr(profile, 'zipcode', '') or ''
             initial_data['place'] = getattr(profile, 'place', '') or ''
 
-    # 🧾 Procesar el formulario de checkout
     if request.method == 'POST':
         form = CheckoutForm(request.POST)
         if form.is_valid():
             try:
+                #  Datos del pedido
                 total = float(cart.get_total_cost())
                 first_name = form.cleaned_data['first_name']
                 last_name = form.cleaned_data['last_name']
@@ -43,13 +40,13 @@ def cart_detail(request):
                 zipcode = form.cleaned_data['zipcode']
                 place = form.cleaned_data['place']
 
-                # Validar campos requeridos
+                #  Validar campos mínimos requeridos
                 required_fields = [first_name, last_name, email, phone, address, zipcode, place]
                 if any(f.strip() == '' for f in required_fields):
                     messages.error(request, "Por favor completa todos los campos obligatorios antes de continuar.")
                     return redirect('cart:cart')
 
-                # Inicializar Mercado Pago
+                #  Inicializar Mercado Pago
                 mp = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
 
                 preference_data = {
@@ -67,17 +64,15 @@ def cart_detail(request):
                         "email": email,
                     },
                     "back_urls": {
-                        "success": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/success/",
-                        "failure": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/failure/",
-                        "pending": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/pending/",
+                        "success": "https://nicolasbriceno.pythonanywhere.com/cart/success/",
+                        "failure": "https://nicolasbriceno.pythonanywhere.com/cart/failure/",
+                        "pending": "https://nicolasbriceno.pythonanywhere.com/cart/pending/",
                     },
                     "auto_return": "approved",
                     "binary_mode": True,
                 }
 
                 result = mp.preference().create(preference_data)
-                print(json.dumps(result, indent=4))
-
                 preference = result.get("response", {})
                 init_point = preference.get("init_point")
 
@@ -85,20 +80,38 @@ def cart_detail(request):
                     messages.error(request, "No se pudo generar el enlace de pago. Intenta nuevamente.")
                     return redirect('cart:cart')
 
-                # ✅ Ahora NO se crea la orden aquí.
-                # Solo se genera el enlace de pago.
+                #  Registrar orden
+                order = checkout(
+                    request,
+                    first_name,
+                    last_name,
+                    email,
+                    phone,
+                    address,
+                    zipcode,
+                    place,
+                    cart.get_total_cost()
+                )
+
+                #  Limpiar carrito
+                cart.clear()
+
+                #  Notificar (opcional)
+                # notify_customer(order)
+                # notify_vendor(order)
+
                 return redirect(init_point)
 
             except Exception as e:
-                print("❌ Error en Mercado Pago:", e)
+                print(" Error en Mercado Pago:", e)
                 messages.error(request, f"Hubo un problema al procesar el pago: {str(e)}")
                 return redirect('cart:cart')
-
         else:
             messages.error(request, "Por favor corrige los errores del formulario.")
             return redirect('cart:cart')
 
     else:
+        #  Instanciar el formulario con los datos iniciales si existen
         form = CheckoutForm(initial=initial_data)
 
     # ⚙️ Acciones del carrito (eliminar / cambiar cantidad)
@@ -121,53 +134,25 @@ def cart_detail(request):
     })
 
 
-# 🟢 VISTA DE ÉXITO (crea la orden y envía correos)
-@login_required
+
+#  Vista de éxito
 def success(request):
-    cart = Cart(request)
-
-    if not cart or not cart.get_total_cost():
-        messages.warning(request, "No hay productos en tu carrito o ya fue procesado.")
-        return redirect('cart:cart')
-
-    # Crear la orden después del pago aprobado
-    order = checkout(
-        request,
-        first_name=request.user.first_name,
-        last_name=request.user.last_name,
-        email=request.user.email,
-        phone=getattr(request.user.profile, 'phone', ''),
-        address=getattr(request.user.profile, 'address', ''),
-        zipcode=getattr(request.user.profile, 'zipcode', ''),
-        place=getattr(request.user.profile, 'place', ''),
-        amount=cart.get_total_cost(),
-    )
-
-    # ✅ Marcar todos los ítems del pedido como pagados al vendedor
-    for item in order.items.all():
-        item.vendor_paid = True
-        item.save()
-
-    # Limpiar carrito
-    cart.clear()
-
-    messages.success(request, "✅ Tu pago fue exitoso. Hemos enviado la confirmación a tu correo.")
-    return render(request, 'cart/success.html', {'order': order})
+    messages.success(request, "¡El pago se completó exitosamente!")
+    return render(request, 'cart/success.html')
 
 
-# 🔴 VISTA DE FALLO
+#  Vista de fallo
 def failure(request):
-    messages.error(request, "❌ El pago fue rechazado o cancelado.")
+    messages.error(request, "El pago fue rechazado o cancelado.")
     return redirect('cart:cart')
 
 
-# 🟡 VISTA DE PENDIENTE
+#  Vista de pago pendiente
 def pending(request):
-    messages.info(request, "🕓 El pago está pendiente de confirmación.")
+    messages.info(request, "El pago está pendiente de confirmación.")
     return redirect('cart:cart')
 
 
-# 🧠 INTEGRACIÓN CON CARRITO TEMPORAL (botapi)
 @login_required
 def checkout_start(request):
     token = request.GET.get("cart_token")
@@ -181,11 +166,13 @@ def checkout_start(request):
         messages.error(request, "El carrito ya expiró o no existe.")
         return redirect('cart:cart')
 
-    # Cargar productos del carrito temporal al real
+    # Cargar los productos del carrito temporal al carrito real del usuario
     cart = Cart(request)
     for item in temp_cart.items.all():
         cart.add(item.product.id, item.quantity)
 
+    # Borrar el carrito temporal
     temp_cart.delete()
 
+    # Redirigir al detalle del carrito (ya con productos cargados)
     return redirect('cart:cart')

@@ -20,5 +20,7 @@ urlpatterns = [
     path("pay_order/", views.pay_order, name="pay_order"),
     # autologin
     path("auto-login/<str:token>/", views.auto_login, name="auto_login"),
+   
+
 
 ]

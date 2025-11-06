@@ -1,68 +1,119 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        
-        <title>Interiorshop</title>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Nueva orden #{{ order.id }}</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    .container {
+      max-width: 640px;
+      margin: 30px auto;
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+    .header {
+      text-align: center;
+      background: linear-gradient(135deg, #ff4d4d, #ff944d);
+      color: white;
+      padding: 20px;
+      border-radius: 10px 10px 0 0;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .order-info {
+      margin-top: 20px;
+    }
+    .order-info p {
+      margin: 6px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background-color: #fafafa;
+    }
+    .total {
+      text-align: right;
+      font-weight: bold;
+      font-size: 16px;
+      margin-top: 15px;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      color: #777;
+      font-size: 13px;
+    }
+    .footer a {
+      color: #ff4d4d;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🍕 Nueva orden #{{ order.id }}</h1>
+      <p>¡Hola {{ vendor.name }}!</p>
+    </div>
 
-        <style type="text/css">
-            html {
-                width: 100%;
-            }
+    <div class="order-info">
+      <p>Tienes una nueva orden en tu tienda dentro de <strong>Pizza Marketplace</strong>.</p>
 
-            body {
-                width: 100%;
-                font-family: Arial;
-                font-size: 14px;
-                background-color: #fff;
-                color: #333;
-            }
-        </style>
-    </head>
-
-    <body>
-        <table width="100%" cellspacing="0" cellpadding="0">
+      <h3>🧾 Detalles del pedido:</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in order.items.all %}
+            {% if item.vendor == vendor %}
             <tr>
-                <td><h1>New order</h1></td>
+              <td>{{ item.product.title }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>{{ item.get_total_price|floatformat:0 }} CLP</td>
             </tr>
+            {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
 
-            <tr>
-                <td>
-                    <h3>Details</h3>
+      <p class="total">💰 Total pagado: <strong>{{ order.paid_amount|floatformat:0 }} CLP</strong></p>
 
-                    <b>Name:</b> {{ order.first_name }} {{ order.last_name }}<br>
-                    <b>Address:</b> {{ order.address }}<br>
-                    <b>Zip and place:</b> {{ order.zipcode }} {{ order.place }}<br>
-                    <b>E-mail:</b> {{ order.email }}<br>
-                    <b>Phone:</b> {{ order.phone }}
-                </td>
-            </tr>
+      <h3>👤 Datos del cliente:</h3>
+      <p><strong>Nombre:</strong> {{ order.first_name }} {{ order.last_name }}</p>
+      <p><strong>Email:</strong> {{ order.email }}</p>
+      <p><strong>Teléfono:</strong> {{ order.phone }}</p>
+      <p><strong>Dirección:</strong> {{ order.address }}, {{ order.place }}</p>
+      <p><strong>Código postal:</strong> {{ order.zipcode }}</p>
+    </div>
 
-            <tr>
-                <td>
-                    <h3>Products</h3>
-
-                    <table width="100%" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td><b>Product</b></td>
-                            <td><b>Price</b></td>
-                            <td><b>Quantity</b></td>
-                            <td><b>Total</b></td>
-                        </tr>
-                        
-                        {% for item in order.items.all %}
-                            {% if item.vendor == vendor %}
-                                <tr>
-                                    <td>{{ item.product.title }}</td>
-                                    <td>${{ item.product.price }}</td>
-                                    <td>{{ item.quantity }}</td>
-                                    <td>${{ item.get_total_price }}</td>
-                                </tr>
-                            {% endif %}
-                        {% endfor %}
-                    </table>
-                </td>
-            </tr>
-        </table>
-    </body>
+    <div class="footer">
+      <p>Por favor, prepara el pedido y comunícate con el cliente si es necesario.</p>
+      <p>— <strong>Pizza Marketplace</strong> 🍕</p>
+      <p><a href="https://pizzamarketplace.com">Ir al panel de vendedor</a></p>
+    </div>
+  </div>
+</body>
 </html>

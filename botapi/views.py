@@ -47,9 +47,47 @@ def check_user(request):
         }, safe=False)
 
 # 🍕 Listar pizzas en formato enriquecido (para WhatsApp)
+# @csrf_exempt
+# def pizzas_cards(request):
+#     """Devuelve todas las pizzas en formato enriquecido (WhatsApp-friendly y ManyChat-ready)."""
+#     pizzas = Product.objects.all().order_by("id")
+
+#     if not pizzas.exists():
+#         return JsonResponse(
+#             {"text": "No hay pizzas disponibles en este momento. ¡Vuelve pronto!"},
+#             safe=False
+#         )
+
+#     message = "🍕 *Estas son nuestras pizzas disponibles:*\n\n"
+#     data = []
+
+#     for p in pizzas:
+#         try:
+#             image_url = request.build_absolute_uri(p.image.url)
+#         except Exception:
+#             image_url = "Sin imagen"
+
+#         message += (
+#             f"🧀 *{p.title}*\n"
+#             f"💵 Precio: *{float(p.price):,.0f} CLP*\n"
+#             f"📸 Imagen: {image_url}\n"
+#             f"➡️ Escribe *{p.id}* para agregar esta pizza al carrito.\n"
+#             f"──────────────────────────────\n"
+#         )
+
+#         data.append({
+#             "id": p.id,
+#             "title": p.title,
+#             "price": float(p.price),
+#             "image": image_url
+#         })
+
+#     message += "\n🛒 Cuando termines, presiona *ver carrito* para revisar tu pedido."
+
+#     return JsonResponse({"text": message, "pizzas": data}, safe=False)
 @csrf_exempt
 def pizzas_cards(request):
-    """Devuelve todas las pizzas en formato enriquecido (WhatsApp-friendly y ManyChat-ready)."""
+    """Devuelve todas las pizzas con una imagen genérica repetida por cada producto (compatible con WhatsApp)."""
     pizzas = Product.objects.all().order_by("id")
 
     if not pizzas.exists():
@@ -58,33 +96,24 @@ def pizzas_cards(request):
             safe=False
         )
 
+    # 🔹 URL de la imagen genérica
+    generic_image_url = "https://nonfimbriate-usha-aerobically.ngrok-free.dev/media/generics/pizza_generic.jpg"
+
+    # 🔹 Mensaje completo en formato texto plano
     message = "🍕 *Estas son nuestras pizzas disponibles:*\n\n"
-    data = []
 
     for p in pizzas:
-        try:
-            image_url = request.build_absolute_uri(p.image.url)
-        except Exception:
-            image_url = "Sin imagen"
-
         message += (
+            f"{generic_image_url}\n"  # 👈 imagen genérica por producto (WhatsApp la muestra como miniatura)
             f"🧀 *{p.title}*\n"
             f"💵 Precio: *{float(p.price):,.0f} CLP*\n"
-            f"📸 Imagen: {image_url}\n"
             f"➡️ Escribe *{p.id}* para agregar esta pizza al carrito.\n"
             f"──────────────────────────────\n"
         )
 
-        data.append({
-            "id": p.id,
-            "title": p.title,
-            "price": float(p.price),
-            "image": image_url
-        })
-
     message += "\n🛒 Cuando termines, presiona *ver carrito* para revisar tu pedido."
 
-    return JsonResponse({"text": message, "pizzas": data}, safe=False)
+    return JsonResponse({"text": message}, safe=False)
 
 # ➕ Agregar productos al carrito temporal
 
