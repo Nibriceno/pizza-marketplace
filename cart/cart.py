@@ -12,12 +12,22 @@ class Cart(object):
         self.cart = cart
 
     def __iter__(self):
-        for p in self.cart.keys():
-            self.cart[str(p)]['product'] = Product.objects.get(pk=p)
+        """
+        Itera sobre los productos del carrito y devuelve un diccionario uniforme
+        con los datos de producto, cantidad y total.
+        """
+        product_ids = self.cart.keys()
+        products = Product.objects.filter(pk__in=product_ids)
 
-        for item in self.cart.values():
-            item['total_price'] = item['product'].price * item['quantity']
-            yield item
+        for product in products:
+            item = self.cart[str(product.id)]
+            yield {
+                "id": product.id,
+                "product": product,
+                "quantity": item["quantity"],
+                "total_price": product.price * item["quantity"],
+            }
+
 
     def __len__(self):
         return sum(item['quantity'] for item in self.cart.values())

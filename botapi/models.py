@@ -8,8 +8,15 @@ from product.models import Product
 class TempCart(models.Model):
     """
     Carrito temporal usado por el bot de ManyChat antes de que el usuario inicie sesión.
+    Cada número de teléfono (WhatsApp ID) puede tener un solo carrito activo.
     """
     token = models.CharField(max_length=100, unique=True, verbose_name="Token del carrito")
+    phone = models.CharField(
+        max_length=30,
+        blank=True,
+        null=True,
+        verbose_name="Número de teléfono del usuario (wa_id)"
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Creado el")
 
     class Meta:
@@ -18,6 +25,8 @@ class TempCart(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
+        if self.phone:
+            return f"Carrito {self.phone} - {self.token[:8]}"
         return f"Carrito #{self.token[:8]}"
 
     def total(self):
