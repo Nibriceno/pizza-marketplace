@@ -14,6 +14,9 @@ urlpatterns = [
 
     path("api/", include("botapi.urls")),
 
+    path('analytics/', include('analytics.urls')),
+
+
 
     # 🧭 Rutas específicas: ponlas antes de product
     path('vendor/', include('vendor.urls')),

@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'location',
     'botapi',
+     # 🔸 app de logs
+    'analytics',  # 👈 agrégala aquí
     
 ]
 
@@ -55,6 +57,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    # 🧱 Middleware personalizado de logs
+    'analytics.middleware.ErrorLoggingMiddleware',
 ]
 
 # 🌍 URL y Templates
@@ -143,3 +148,6 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 MERCADOPAGO_PUBLIC_KEY = os.getenv('MERCADOPAGO_PUBLIC_KEY', '')
 MERCADOPAGO_ACCESS_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN', '')
 MERCADOPAGO_WEBHOOK_SECRET =os.getenv('MERCADOPAGO_WEBHOOK_SECRET', '')
+
+
+MANYCHAT_SECRET = "fh+##3lsl221#@$%$%^%$@"

@@ -1,4 +1,4 @@
-import random  # To get random products from the database
+import random
 from django.contrib import messages
 from django.shortcuts import redirect, render, get_object_or_404
 from django.db.models import Q
@@ -10,30 +10,37 @@ from core.models import Country
 
 
 def product(request, category_slug, product_slug):
+    from analytics.utils import log_event  # 🔹 Import local para evitar dependencias circulares
+
     cart = Cart(request)
     product = get_object_or_404(Product, category__slug=category_slug, slug=product_slug)
 
-    # 🧭 Verificamos si el usuario tiene país asignado
+    # 🧭 Verificamos país del usuario
     if request.user.is_authenticated and hasattr(request.user, 'profile') and request.user.profile.country:
         user_country = request.user.profile.country
-
-        # 🛡️ Si el país del producto no coincide con el del usuario → redirigimos
         if product.vendor.country != user_country:
-            messages.warning(
-                request,
-                f"🚫 Esta pizza no está disponible en tu país ({user_country.name})."
-            )
+            messages.warning(request, f"🚫 Esta pizza no está disponible en tu país ({user_country.name}).")
             return redirect('product:category', category_slug=category_slug)
-
     else:
-        # Si no hay país o no está logueado, también redirigimos
-        messages.warning(
-            request,
-            "Debes iniciar sesión para ver este producto."
-        )
-        return redirect('vendor:login')  # O 'core:home' si prefieres
+        messages.warning(request, "Debes iniciar sesión para ver este producto.")
+        return redirect('vendor:login')
 
-    # 🪙 Obtenemos moneda y símbolo
+    # ⚙️ Evita duplicar logs tras agregar al carrito
+    current_view = f"view_{product.id}"
+    last_view = request.session.get("last_product_view")
+
+    # 👀 Solo loguear si es un GET normal y no viene de un POST anterior
+    if request.method == "GET" and last_view != current_view:
+        log_event(
+            request,
+            action=f"👀 Vio producto '{product.title}'",
+            page="product/detail",
+            product_id=product.id,
+            extra_data={"precio": product.price}  # ✅ solo precio (no hay cantidad aún)
+        )
+        request.session["last_product_view"] = current_view
+
+    # 🪙 Moneda
     currency_symbol = product.vendor.country.currency_symbol or ''
     currency_code = product.vendor.country.currency or ''
 
@@ -44,6 +51,23 @@ def product(request, category_slug, product_slug):
             quantity = form.cleaned_data['quantity']
             cart.add(product_id=product.id, quantity=quantity, update_quantity=False)
             messages.success(request, "El producto fue agregado al carrito.")
+
+            # 🧠 Log: el usuario seleccionó este producto (con detalles)
+            log_event(
+                request,
+                action=f"🖱️ Seleccionó producto '{product.title}' (x{quantity})",
+                page="product/detail",
+                product_id=product.id,
+                extra_data={
+                    "precio": product.price,
+                    "cantidad": quantity,
+                    "total": product.price * quantity
+                }
+            )
+
+            # 🧩 Marcar que el siguiente GET proviene de este POST
+            request.session["last_product_view"] = current_view
+
             return redirect('product:product', category_slug=category_slug, product_slug=product_slug)
     else:
         form = AddToCartForm()
@@ -64,11 +88,9 @@ def product(request, category_slug, product_slug):
     return render(request, 'product/product.html', context)
 
 
-from core.models import Country
-from django.shortcuts import render, get_object_or_404
-from .models import Category, Product
-
 def category(request, category_slug):
+    from analytics.utils import log_event
+
     category = get_object_or_404(Category, slug=category_slug)
     products = []
 
@@ -79,8 +101,6 @@ def category(request, category_slug):
             category=category,
             vendor__created_by__profile__country=user_country
         )
-
-    # 🔒 Si no está logueado → usar país de sesión
     else:
         country_id = request.session.get('selected_country')
         if country_id:
@@ -93,15 +113,23 @@ def category(request, category_slug):
             except Country.DoesNotExist:
                 products = []
 
+    # 🧠 Log: el usuario visitó esta categoría
+    log_event(
+        request,
+        action=f"📂 Entró a la categoría '{category.title}'",
+        page="product/category",
+        extra_data={"productos_disponibles": len(products)}
+    )
+
     return render(request, 'product/category.html', {
         'category': category,
         'products': products,
     })
 
 
-
-# ✅ Vista para búsqueda de productos
 def search(request):
+    from analytics.utils import log_event
+
     query = request.GET.get('query', '')
     products = Product.objects.filter(
         Q(title__icontains=query) | Q(description__icontains=query)
@@ -112,12 +140,20 @@ def search(request):
         user_country = request.user.profile.country
         products = products.filter(vendor__country=user_country)
 
+    # 🧠 Log: búsqueda
+    if query.strip():
+        log_event(
+            request,
+            action=f"🔍 Buscó '{query}'",
+            page="product/search",
+            extra_data={"resultados": products.count()}
+        )
+
     return render(request, 'product/search.html', {
         'products': products,
         'query': query
     })
 
-from product.models import Product
 
 def home(request):
     newest_products = Product.objects.all().order_by('-id')
@@ -133,5 +169,3 @@ def home(request):
     return render(request, 'core/frontpage.html', {
         'newest_products': newest_products
     })
-
-

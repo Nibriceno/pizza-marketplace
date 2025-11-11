@@ -98,7 +98,7 @@ def add_to_cart(request):
         return JsonResponse({
             "status": "error",
             "message": "⚠️ Usa POST o GET para agregar al carrito."
-        }, status=405)
+        }, status=200)  # 👈 antes era 405
 
     print("📦 Datos recibidos en add_to_cart:", data)
 
@@ -111,7 +111,7 @@ def add_to_cart(request):
         return JsonResponse({
             "status": "error",
             "message": "⚠️ No se encontró el carrito. Escribe *hola* para comenzar un nuevo pedido."
-        }, status=400)
+        }, status=200)  # 👈 antes 400
 
     # Limpieza del product_id
     if isinstance(product_id, str):
@@ -122,7 +122,7 @@ def add_to_cart(request):
         return JsonResponse({
             "status": "error",
             "message": "⚠️ Falta el número del producto. Escribe *ver pizzas* para ver los números disponibles."
-        }, status=400)
+        }, status=200)  # 👈 antes 400
 
     # 🧩 Validar que sea número entero
     try:
@@ -131,7 +131,7 @@ def add_to_cart(request):
         return JsonResponse({
             "status": "error",
             "message": f"❌ ID inválido: {product_id}. Escribe *ver pizzas* para ver los números disponibles."
-        }, status=400)
+        }, status=200)  # 👈 antes 400
 
     # 🧩 Validar cantidad
     try:
@@ -148,7 +148,7 @@ def add_to_cart(request):
         return JsonResponse({
             "status": "error",
             "message": "❌ Carrito no encontrado. Escribe *hola* para crear uno nuevo."
-        }, status=404)
+        }, status=200)  # 👈 antes 404
 
     # 🍕 Buscar producto — aquí reforzamos el mensaje
     try:
@@ -157,7 +157,7 @@ def add_to_cart(request):
         return JsonResponse({
             "status": "error",
             "message": f"🍕 El producto con ID {product_id} no existe. Intenta con otro número o escribe *ver pizzas* para ver la lista."
-        }, status=404)
+        }, status=200)  # 👈 antes 404
 
     # 🧾 Agregar o actualizar item
     item, created = TempItem.objects.get_or_create(
@@ -173,7 +173,8 @@ def add_to_cart(request):
     return JsonResponse({
         "status": "success",
         "message": message
-    })
+    }, status=200)  # 👈 mantiene 200
+
 
 
 # 👀 Ver contenido del carrito temporal
