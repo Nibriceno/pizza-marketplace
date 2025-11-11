@@ -2,51 +2,32 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard de Actividad</title>
-  <style>
-    body { font-family: sans-serif; background: #f9fafb; color: #222; padding: 2rem; }
-    h1 { color: #0d9488; }
-    .stats { display: flex; gap: 2rem; margin-bottom: 1rem; flex-wrap: wrap; }
-    .card { background: white; padding: 1rem 2rem; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); min-width: 200px; }
-    table { border-collapse: collapse; width: 100%; background: white; margin-top: 1rem; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
-    th { background: #0d9488; color: white; }
-    tr:nth-child(even) { background: #f2f2f2; }
-    tr.error-row { background: #fee2e2 !important; } /* filas de error en rojo claro */
-    .filters { margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-    label { font-weight: bold; }
-    select, input { margin-right: 10px; padding: 5px; }
-    button { background: #0d9488; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #0b7669; }
-    .json-box { font-family: monospace; background: #f3f4f6; border-radius: 6px; padding: 6px 8px; font-size: 0.85rem; overflow-x: auto; }
-    .json-key { color: #7c3aed; }
-    .json-value { color: #059669; }
-    .json-string { color: #2563eb; }
-  </style>
+  <title>📊 Dashboard de Actividad</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'analytics/css/dashboard.css' %}">
 </head>
 <body>
-
   <h1>📊 Dashboard de Actividad de Usuarios</h1>
 
   <!-- Contadores -->
   <div class="stats">
     <div class="card">
       <h3>Total acciones</h3>
-      <p style="font-size:1.4rem; font-weight:bold;">{{ total }}</p>
+      <p class="stat-value">{{ total }}</p>
     </div>
     <div class="card">
       <h3>Total errores</h3>
-      <p style="font-size:1.4rem; font-weight:bold; color:#dc2626;">{{ errores }}</p>
+      <p class="stat-value error">{{ errores }}</p>
     </div>
     <div class="card">
       <h3>Usuarios únicos</h3>
-      <p style="font-size:1.4rem; font-weight:bold;">{{ usuarios }}</p>
+      <p class="stat-value">{{ usuarios }}</p>
     </div>
   </div>
 
-  <!-- Top acciones
-  <div class="card" style="margin-bottom: 1.5rem;">
-    <h3>🔥 Acciones más comunes</h3>
+  <!-- Acciones más comunes -->
+  <div class="card top-actions">
+    <h3>Acciones más comunes</h3>
     <ul>
       {% for a in mas_comunes %}
         <li>{{ a.action }} — <strong>{{ a.total }}</strong> veces</li>
@@ -54,7 +35,7 @@
         <li>No hay registros suficientes aún.</li>
       {% endfor %}
     </ul>
-  </div> -->
+  </div>
 
   <!-- Filtros -->
   <form method="get" class="filters">
@@ -62,20 +43,30 @@
     <select name="tipo">
       <option value="" {% if not tipo %}selected{% endif %}>Todos</option>
       <option value="error" {% if tipo == 'error' %}selected{% endif %}>Solo errores</option>
-      <option value="global" {% if tipo == 'global' %}selected{% endif %}>Solo errores globales</option>
+      <option value="global" {% if tipo == 'global' %}selected{% endif %}>Errores globales</option>
       <option value="accion" {% if tipo == 'accion' %}selected{% endif %}>Solo acciones</option>
     </select>
 
     <label>Usuario:</label>
     <input type="text" name="usuario" value="{{ usuario_filtro }}" placeholder="nombre de usuario">
 
-    <label>Sección:</label>
+    <label>Origen:</label>
     <select name="page">
+      <option value="">Todos</option>
+      <option value="manychat" {% if page == 'manychat' %}selected{% endif %}>🤖 Bot ManyChat</option>
+      <option value="web" {% if page == 'web' %}selected{% endif %}>🌐 Web</option>
+    </select>
+
+    <label>Sección:</label>
+    <select name="section">
       <option value="">Todas</option>
-      <option value="cart" {% if 'cart' in page|default:'' %}selected{% endif %}>🛒 Carrito / Pagos</option>
-      <option value="product" {% if 'product' in page|default:'' %}selected{% endif %}>🍕 Productos</option>
-      <option value="analytics" {% if 'analytics' in page|default:'' %}selected{% endif %}>📊 Analytics</option>
-      <option value="manychat" {% if 'manychat' in page|default:'' %}selected{% endif %}>🤖 Bot ManyChat</option>
+      <option value="productos" {% if section == 'productos' %}selected{% endif %}>🍕 Productos</option>
+      <option value="categorias" {% if section == 'categorias' %}selected{% endif %}>📂 Categorías</option>
+      <option value="carrito" {% if section == 'carrito' %}selected{% endif %}>🛒 Carrito</option>
+      <option value="checkout" {% if section == 'checkout' %}selected{% endif %}>💳 Checkout</option>
+      <option value="errores" {% if section == 'errores' %}selected{% endif %}>❌ Errores</option>
+      <option value="bot" {% if section == 'bot' %}selected{% endif %}>🤖 Bot</option>
+      <option value="otros" {% if section == 'otros' %}selected{% endif %}>📄 Otros</option>
     </select>
 
     <label>Fecha:</label>
@@ -87,60 +78,58 @@
     <button type="submit">Filtrar</button>
   </form>
 
-  <!-- Tabla de logs -->
+  <!-- Tabla -->
   <table>
     <thead>
       <tr>
         <th>Fecha y hora</th>
         <th>Usuario</th>
         <th>Acción</th>
-        <th>Página</th>
+        <th>Origen</th>
+        <th>Sección</th>
         <th>ID Producto</th>
-        <th>Teléfono</th>
         <th>Detalles</th>
       </tr>
     </thead>
     <tbody>
       {% for log in logs %}
-      <tr class="{% if 'ERROR' in log.action %}error-row{% endif %}">
-        <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
-        <td>
-          {% if log.user %}
-            {{ log.user.username }}
-          {% elif log.user_name %}
-            {{ log.user_name }}
-          {% else %}
-            Anónimo
-          {% endif %}
-        </td>
-        <td>{{ log.action }}</td>
-        <td>{{ log.page|default:"-" }}</td>
-        <td>{{ log.product_id|default:"-" }}</td>
-        <td>
-          {% if log.user and log.user.profile.phone %}
-            {{ log.user.profile.phone }}
-          {% else %}
-            -
-          {% endif %}
-        </td>
-        <td>
-          {% if log.extra_data %}
-            <div class="json-box">
-              {{ log.extra_data|safe }}
-            </div>
-          {% elif log.message %}
-            <div class="json-box">
-              {{ log.message }}
-            </div>
-          {% else %}
-            -
-          {% endif %}
-        </td>
-      </tr>
+        <tr class="
+          {% if log.row_class == 'row-bot' %}row-bot
+          {% elif log.row_class == 'row-error' %}row-error
+          {% else %}row-web{% endif %}
+        ">
+          <td>{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+          <td>
+            {% if log.user %}
+              {{ log.user.username }}
+            {% elif log.user_name %}
+              {{ log.user_name }}
+            {% else %}
+              Anónimo
+            {% endif %}
+          </td>
+          <td>{{ log.action }}</td>
+          <td>{{ log.page|default:"-" }}</td>
+          <td>
+            {% if log.section %}
+              <span class="tag tag-{{ log.section|lower }}">{{ log.section }}</span>
+            {% else %}
+              <span class="tag tag-default">-</span>
+            {% endif %}
+          </td>
+          <td>{{ log.product_id|default:"-" }}</td>
+          <td>
+            {% if log.extra_data %}
+              <div class="json-box">{{ log.extra_data|safe }}</div>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+        </tr>
       {% empty %}
-      <tr>
-        <td colspan="7" style="text-align:center;">No hay registros que coincidan con los filtros.</td>
-      </tr>
+        <tr>
+          <td colspan="7" style="text-align:center;">No hay registros que coincidan con los filtros.</td>
+        </tr>
       {% endfor %}
     </tbody>
   </table>

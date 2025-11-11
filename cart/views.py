@@ -17,10 +17,6 @@ from order.models import Order
 from analytics.utils import log_event
 
 
-
-
-
-
 # 🛒 DETALLE DEL CARRITO
 @login_required
 def cart_detail(request):
@@ -131,6 +127,9 @@ def cart_detail(request):
                         extra_data={"order_id": order.id, "monto_total": total}
                     )
 
+                    # Usamos la URL dinámica para Mercado Pago
+                    base_url = settings.BASE_URL  # Usamos BASE_URL configurada
+
                     mp = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
                     preference_data = {
                         "items": [
@@ -148,13 +147,13 @@ def cart_detail(request):
                             "email": data["email"],
                         },
                         "back_urls": {
-                            "success": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/success/",
-                            "failure": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/failure/",
-                            "pending": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/pending/",
+                            "success": f"{base_url}/cart/success/",  # URL dinámica
+                            "failure": f"{base_url}/cart/failure/",
+                            "pending": f"{base_url}/cart/pending/",
                         },
                         "auto_return": "approved",
                         "binary_mode": True,
-                        "notification_url": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/webhook/",
+                        "notification_url": f"{base_url}/cart/webhook/",  # URL dinámica para webhook
                         "external_reference": str(order.id),
                     }
 
@@ -215,7 +214,7 @@ def cart_detail(request):
             request,
             action="Error general en cart_detail",
             page="cart/detail",
-            extra_data={"error": str(e)},
+            extra_data={"error": str(e)} 
         )
         raise
 
