@@ -9,10 +9,8 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # 🛡️ Seguridad
-SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-secret-key')
-
-# ⚠️ Importante: pon DEBUG en False en producción real
-DEBUG = True
+SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-secret-key')  # ⚠️ Importante: pon DEBUG en False en producción real
+DEBUG = True  # Cambia a False en producción real
 
 # 🌐 Hosts permitidos — incluye tu dominio de PythonAnywhere
 ALLOWED_HOSTS = [
@@ -21,7 +19,6 @@ ALLOWED_HOSTS = [
     'localhost',
     'nonfimbriate-usha-aerobically.ngrok-free.dev'
 ]
-
 CSRF_TRUSTED_ORIGINS = [
     "https://nonfimbriate-usha-aerobically.ngrok-free.dev",
     "https://nicolasbriceno.pythonanywhere.com"
@@ -42,8 +39,8 @@ INSTALLED_APPS = [
     'order',
     'widget_tweaks',
     'location',
-    'botapi',
-    'analytics',  # 👈 app de logs
+    'botapi',  # 🔸 app de logs
+    'analytics',  # 👈 agrégala aquí
 ]
 
 # 🧱 Middleware
@@ -55,7 +52,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'analytics.middleware.ErrorLoggingMiddleware',  # 🧱 Middleware personalizado de logs
+    # 🧱 Middleware personalizado de logs
+    'analytics.middleware.ErrorLoggingMiddleware',
 ]
 
 # 🌍 URL y Templates
@@ -64,8 +62,8 @@ ROOT_URLCONF = 'simple_multivendor_site.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
-        'APP_DIRS': True,
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # Directorio global para templates
+        'APP_DIRS': True,  # Asegura que Django busque también en las carpetas de cada app
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -89,18 +87,20 @@ DATABASES = {
     }
 }
 
-# Configuración dinámica de URLs
-BASE_URL = os.getenv('BASE_URL', 'http://127.0.0.1:8000')  # Usará BASE_URL de .env
-PROD_BASE_URL = os.getenv('PROD_BASE_URL', 'https://tusitio.pythonanywhere.com')  # Para producción
+# 🔐 Password validators
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
 
-# Determinar si estamos en ngrok o en local
-if 'ngrok' in os.getenv('BASE_URL', ''):
-    BASE_URL = os.getenv('NGROK_BASE_URL', 'https://nonfimbriate-usha-aerobically.ngrok-free.dev')
-
-# 💳 Mercado Pago
-MERCADOPAGO_PUBLIC_KEY = os.getenv('MERCADOPAGO_PUBLIC_KEY', '')
-MERCADOPAGO_ACCESS_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN', '')
-MERCADOPAGO_WEBHOOK_SECRET = os.getenv('MERCADOPAGO_WEBHOOK_SECRET', '')
+# 🌍 Internacionalización
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_L10N = True
+USE_TZ = True
 
 # 📁 Archivos estáticos
 STATIC_URL = '/static/'
@@ -112,9 +112,32 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # 🧑‍💻 Login & sesiones
-LOGIN_URL = 'vendor:login'
-LOGIN_REDIRECT_URL = 'vendor:vendor-admin'
+LOGIN_URL = 'core:login'
+# LOGIN_REDIRECT_URL = 'vendor:vendor-admin'
 LOGOUT_REDIRECT_URL = 'core:home'
-
 SESSION_COOKIE_AGE = 86400  # 1 día en segundos
 CART_SESSION_ID = 'cart'
+
+# MERCADOPAGO
+MERCADOPAGO_SANDBOX = True  # Cambia a False cuando vayas a producción
+
+# 💳 Stripe (desde .env)
+STRIPE_PUB_KEY = 'pk_test_OKdhbDNME5KHtnpzYRBfNmEZ00mjM6DVsJ'  # publica
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+
+# 📧 Email (ajústalo si usarás notificaciones)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "nicolas.bricenocq@gmail.com"
+EMAIL_HOST_PASSWORD = "kqqqfatfoabsxasd"  # tu nueva contraseña de aplicación, sin espacios
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# 💳 Mercado Pago
+MERCADOPAGO_PUBLIC_KEY = os.getenv('MERCADOPAGO_PUBLIC_KEY', '')
+MERCADOPAGO_ACCESS_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN', '')
+MERCADOPAGO_WEBHOOK_SECRET = os.getenv('MERCADOPAGO_WEBHOOK_SECRET', '')
+
+# MANYCHAT SECRET (reemplaza esto con tu propio secreto de ManyChat)
+MANYCHAT_SECRET = "fh+##3lsl221#@$%$%^%$@"

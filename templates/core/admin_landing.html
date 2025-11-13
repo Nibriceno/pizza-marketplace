@@ -1,0 +1,130 @@
+{% extends "core/base.html" %}
+{% block content %}
+<style>
+/* 🔧 Asegurar que el navbar quede fijo arriba */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+}
+
+/* 📏 Dar espacio al contenido para que no quede detrás del navbar */
+main {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 6rem; /* altura del navbar */
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f9fafb;
+  color: #222;
+  margin: 0;
+}
+
+/* --- Título --- */
+h1 {
+  color: #0d9488;
+  margin-bottom: 1.5rem;
+  font-size: 2rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+p.text-muted {
+  color: #555;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+/* --- Botones principales --- */
+.buttons-admin {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.buttons-admin a {
+  background: #0d9488;
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.buttons-admin a:hover {
+  background: #0b7669;
+  transform: translateY(-4px);
+}
+
+/* --- Tarjetas --- */
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.8rem 2.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  min-width: 260px;
+  max-width: 320px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+}
+.card h3 {
+  color: #0d9488;
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+}
+.card p {
+  color: #555;
+  font-size: 1rem;
+}
+</style>
+
+<main>
+  <div class="container text-center mt-5">
+    <h1>👋 Bienvenido Admin</h1>
+    <p class="text-muted">Panel de control administrativo</p>
+
+    <div class="buttons-admin">
+      <a href="/admin/">⚙️ Django Admin</a>
+      <a href="/analytics/dashboard/">📊 Dashboard de Logs</a>
+      <a href="/analytics/graficos/">📈 Gráficos</a>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <h3>Gestión de Usuarios</h3>
+        <p>Accede al panel de administración para gestionar usuarios y permisos del sistema.</p>
+      </div>
+      <div class="card">
+        <h3>Registro de Actividad</h3>
+        <p>Consulta los eventos registrados por la web y el bot desde el dashboard de logs.</p>
+      </div>
+      <div class="card">
+        <h3>Métricas del Sistema</h3>
+        <p>Explora los gráficos interactivos para analizar errores, actividad y rendimiento.</p>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}

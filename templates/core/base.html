@@ -1,229 +1,220 @@
-    {% load static %}
+{% load static %}
 
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{% block title %}Pizza Marketplace{% endblock title %}</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.2/css/bulma.min.css">
-        <link rel="stylesheet" href="{% static 'css/main.css' %}">
-        <style>
-            /* 🧭 Evita que se corte el menú desplegable */
-            .navbar {
-                overflow: visible !important;
-            }
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Pizza Marketplace{% endblock title %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.2/css/bulma.min.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <style>
+        /* 🧭 Evita que se corte el menú desplegable */
+        .navbar {
+            overflow: visible !important;
+        }
 
-            /* 📌 Mantener footer abajo cuando no hay contenido */
-            html, body {
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-            }
+        /* 📌 Mantener footer abajo cuando no hay contenido */
+        html, body {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
 
-            body {
-                margin: 0;
-            }
+        body {
+            margin: 0;
+        }
 
-            section.section {
-                flex: 1; /* El contenido ocupa el espacio disponible */
-            }
+        section.section {
+            flex: 1; /* El contenido ocupa el espacio disponible */
+        }
 
-            footer.footer {
-                margin-top: auto; /* Empuja el footer al fondo */
-            }
-        </style>
-    </head>
-    <body>
+        footer.footer {
+            margin-top: auto; /* Empuja el footer al fondo */
+        }
+    </style>
+</head>
+<body>
 
-        <!-- ✅ Navbar -->
-        <nav class="navbar" role="navigation" aria-label="main navigation">
-            <div class="navbar-brand">
-                <!-- 🍕 LOGO -->
-                <a class="navbar-item" href="{% url 'core:home' %}">
-                    <img src="https://cdn-icons-png.flaticon.com/512/1404/1404945.png"
-                        alt="Pizza Marketplace Logo"
-                        style="height: 40px; width: auto; object-fit: contain;">
-                </a>
+    <!-- ✅ Navbar -->
+    <nav class="navbar" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <!-- 🍕 LOGO -->
+            <a class="navbar-item" href="{% url 'core:home' %}">
+                <img src="https://cdn-icons-png.flaticon.com/512/1404/1404945.png"
+                     alt="Pizza Marketplace Logo"
+                     style="height: 40px; width: auto; object-fit: contain;">
+            </a>
 
-                <!-- 🍔 Burger menu para móvil -->
-                <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
-                    <span aria-hidden="true"></span>
-                    <span aria-hidden="true"></span>
-                    <span aria-hidden="true"></span>
-                </a>
-            </div>
+            <!-- 🍔 Burger menu para móvil -->
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
 
-            <div id="navbarBasicExample" class="navbar-menu">
-                <!-- 🌐 NAVBAR START -->
-                <div class="navbar-start">
-                    <a class="navbar-item" href="{% url 'core:home' %}">Inicio</a>
+        <div id="navbarBasicExample" class="navbar-menu">
+            <!-- 🌐 NAVBAR START -->
+            <div class="navbar-start">
+                <a class="navbar-item" href="{% url 'core:home' %}">Inicio</a>
 
-                    {% for category in categories %}
-                        <a class="navbar-item" href="{% url 'product:category' category.slug %}">
-                            {{ category.title }}
-                        </a>
-                    {% endfor %}
+                {% for category in categories %}
+                    <a class="navbar-item" href="{% url 'product:category' category.slug %}">
+                        {{ category.title }}
+                    </a>
+                {% endfor %}
 
-                    <!-- 🔍 Barra de búsqueda -->
-                    <div class="navbar-item">
-                        <form method="get" action="{% url 'product:search' %}">
-                            <div class="field has-addons">
-                                <div class="control">
-                                    <input type="search" name="query" class="input" placeholder="Buscar...">
-                                </div>
-                                <div class="control">
-                                    <button class="button is-dark is-uppercase">Buscar</button>
-                                </div>
+                <!-- 🔍 Barra de búsqueda -->
+                <div class="navbar-item">
+                    <form method="get" action="{% url 'product:search' %}">
+                        <div class="field has-addons">
+                            <div class="control">
+                                <input type="search" name="query" class="input" placeholder="Buscar...">
                             </div>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- 🌐 NAVBAR END -->
-                <div class="navbar-end">
-                    <!-- 🛒 Carrito -->
-                    <div class="navbar-item">
-                        <a href="{% url 'cart:cart' %}" class="button is-warning">
-                            Carrito {% if cart %}({{ cart|length }}){% endif %}
-                        </a>
-                    </div>
-
-                    {% if request.user.is_authenticated %}
-                        <!-- 👤 Usuario logueado -->
-                        <div class="navbar-item has-dropdown is-hoverable">
-                            <a class="navbar-link is-capitalized">
-                                {% if user.vendor %}
-                                    {{ user.vendor.name }}
-                                {% else %}
-                                    {{ user.username }}
-                                {% endif %}
-                            </a>
-
-                            <div class="navbar-dropdown is-right">
-                                <a class="navbar-item" href="{% url 'vendor:vendor-admin' %}">Perfil</a>
-
-                                {% if user.vendor %}
-                                    <a class="navbar-item" href="{% url 'vendor:edit-vendor' %}">Actualizar Perfil</a>
-                                    <a class="navbar-item" href="{% url 'vendor:add-product' %}">Agregar Producto</a>
-                                    <hr class="navbar-divider">
-                                {% endif %}
-
-                                <form method="post" action="{% url 'logout' %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="navbar-item button is-white" style="width: 100%; text-align: left;">
-                                        Cerrar sesión
-                                    </button>
-                                </form>
+                            <div class="control">
+                                <button class="button is-dark is-uppercase">Buscar</button>
                             </div>
                         </div>
-
-                    {% else %}
-                    <!-- 🚪 Usuario no logueado -->
-                    <div class="navbar-item">
-                        <div class="buttons">
-                            <a class="button is-primary" href="{% url 'vendor:become-vendor' %}">
-                                <strong>Hazte Vendedor</strong>
-                            </a>
-                            <a class="button is-primary" href="{% url 'vendor:become-customer' %}">
-                                <strong>Hazte Cliente</strong>
-                            </a>
-                            <a class="button is-light" href="{% url 'vendor:login' %}">
-                                Iniciar sesión
-                            </a>
-                        </div>
-                    </div>
-                    {% endif %}
+                    </form>
                 </div>
             </div>
-        </nav>
 
-                    {% if messages %}
-            <div id="toast-container" style="
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-                z-index: 9999;
-            ">
-            {% for message in messages %}
-                <div class="notification {% if message.tags %}is-{{ message.tags }}{% endif %}" style="
-                    min-width: 250px;
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-                    animation: slide-in 0.4s ease, fade-out 0.4s ease 2.5s forwards;
-                ">
-                <button class="delete"></button>
-                {{ message }}
+            <!-- 🌐 NAVBAR END -->
+            <div class="navbar-end">
+                <!-- 🛒 Carrito -->
+                <div class="navbar-item">
+                    <a href="{% url 'cart:cart' %}" class="button is-warning">
+                        Carrito {% if cart %}({{ cart|length }}){% endif %}
+                    </a>
                 </div>
-            {% endfor %}
-            </div>
-            {% endif %}
 
-                <style>
-                    @keyframes slide-in {
-                    from { transform: translateX(120%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                    }
-
-                    @keyframes fade-out {
-                    to { opacity: 0; transform: translateX(120%); }
-                    }
-                </style>
-
-
-
-
-
-
-        <!-- 📄 Contenido -->
-        <section class="section">
-            <div class="container">
-                {% block content %}{% endblock content %}
-            </div>
-        </section>
-
-        <!-- 📎 Footer -->
-        <footer class="footer">
-            <div class="content has-text-centered">
-                <h3 class="is-size-4 mb-4">🍕 Pizza Marketplace</h3>
                 {% if request.user.is_authenticated %}
-                    
+                    <!-- 👤 Usuario logueado -->
+                    <div class="navbar-item has-dropdown is-hoverable">
+                        <a class="navbar-link is-capitalized">
+                            {% if user.vendor %}
+                                {{ user.vendor.name }}
+                            {% else %}
+                                {{ user.username }}
+                            {% endif %}
+                        </a>
+
+                        <div class="navbar-dropdown is-right">
+                            <a class="navbar-item" href="{% url 'vendor:vendor-admin' %}">Perfil</a>
+
+                            {% if user.vendor %}
+                                <a class="navbar-item" href="{% url 'vendor:edit-vendor' %}">Actualizar Perfil</a>
+                                <a class="navbar-item" href="{% url 'vendor:add-product' %}">Agregar Producto</a>
+                                <hr class="navbar-divider">
+                            {% endif %}
+
+                            <form method="post" action="{% url 'logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="navbar-item button is-white" style="width: 100%; text-align: left;">
+                                    Cerrar sesión
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
                 {% else %}
-                    <a href="{% url 'vendor:become-vendor' %}">Hazte Vendedor</a>
+                <!-- 🚪 Usuario no logueado -->
+                <div class="navbar-item">
+                    <div class="buttons">
+                        <a class="button is-primary" href="{% url 'vendor:become-vendor' %}">
+                            <strong>Hazte Vendedor</strong>
+                        </a>
+                        <a class="button is-primary" href="{% url 'vendor:become-customer' %}">
+                            <strong>Hazte Cliente</strong>
+                        </a>
+                        <!-- 🔁 CAMBIO AQUÍ -->
+                        <a class="button is-light" href="{% url 'core:login' %}">
+                            Iniciar sesión
+                        </a>
+                    </div>
+                </div>
                 {% endif %}
-                <br>
-                <a href="{% url 'vendor:vendors' %}">Todos los vendedores</a>
-                <p style="font-size: 0.9rem; color: #777; margin-top: 1rem;">
-                    © 2025 Nicolás Briceño. Todos los derechos reservados.
-                </p>
             </div>
-        </footer>
+        </div>
+    </nav>
 
-        <!-- 🧭 Script para el menú responsive -->
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+    {% if messages %}
+        <div id="toast-container" style="
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 9999;
+        ">
+        {% for message in messages %}
+            <div class="notification {% if message.tags %}is-{{ message.tags }}{% endif %}" style="
+                min-width: 250px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+                animation: slide-in 0.4s ease, fade-out 0.4s ease 2.5s forwards;
+            ">
+            <button class="delete"></button>
+            {{ message }}
+            </div>
+        {% endfor %}
+        </div>
+    {% endif %}
 
-                if ($navbarBurgers.length > 0) {
-                    $navbarBurgers.forEach(el => {
-                        el.addEventListener('click', () => {
-                            const target = el.dataset.target;
-                            const $target = document.getElementById(target);
+    <style>
+        @keyframes slide-in {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
 
-                            el.classList.toggle('is-active');
-                            $target.classList.toggle('is-active');
-                        });
+        @keyframes fade-out {
+            to { opacity: 0; transform: translateX(120%); }
+        }
+    </style>
+
+    <!-- 📄 Contenido -->
+    <section class="section">
+        <div class="container">
+            {% block content %}{% endblock content %}
+        </div>
+    </section>
+
+    <!-- 📎 Footer -->
+    <footer class="footer">
+        <div class="content has-text-centered">
+            <h3 class="is-size-4 mb-4">🍕 Pizza Marketplace</h3>
+            {% if request.user.is_authenticated %}
+            {% else %}
+                <a href="{% url 'vendor:become-vendor' %}">Hazte Vendedor</a>
+            {% endif %}
+            <br>
+            <a href="{% url 'vendor:vendors' %}">Todos los vendedores</a>
+            <p style="font-size: 0.9rem; color: #777; margin-top: 1rem;">
+                © 2025 Nicolás Briceño. Todos los derechos reservados.
+            </p>
+        </div>
+    </footer>
+
+    <!-- 🧭 Script para el menú responsive -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+            if ($navbarBurgers.length > 0) {
+                $navbarBurgers.forEach(el => {
+                    el.addEventListener('click', () => {
+                        const target = el.dataset.target;
+                        const $target = document.getElementById(target);
+                        el.classList.toggle('is-active');
+                        $target.classList.toggle('is-active');
                     });
-                }
-            });
-        </script>
+                });
+            }
+        });
+    </script>
 
-        <script src="{% static 'js/main.js' %}"></script>
-        {% block scripts %}{% endblock scripts %}
-
-        
-    </body>
-    </html>
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block scripts %}{% endblock scripts %}
+</body>
+</html>

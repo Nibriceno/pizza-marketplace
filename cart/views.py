@@ -6,22 +6,18 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
-
 from .cart import Cart
 from .forms import CheckoutForm
 from order.utilities import checkout, notify_customer, notify_vendor
 from botapi.models import TempCart
 from order.models import Order
-
 # 🧠 Importamos el logger de analytics
 from analytics.utils import log_event
-
 
 # 🛒 DETALLE DEL CARRITO
 @login_required
 def cart_detail(request):
     cart = Cart(request)
-
     try:
         # 🧩 Acciones rápidas (agregar, eliminar, cambiar cantidad)
         remove_from_cart = request.GET.get('remove_from_cart', '')
@@ -48,7 +44,6 @@ def cart_detail(request):
                 cart.add(change_quantity, quantity, update_quantity=False)
             else:
                 cart.add(change_quantity, quantity, update_quantity=True)
-
             log_event(
                 request,
                 action=f"🔄 Cambió cantidad del producto {change_quantity} a {quantity}",
@@ -91,10 +86,14 @@ def cart_detail(request):
                 try:
                     total = float(cart.get_total_cost())
                     data = form.cleaned_data
-
                     required_fields = [
-                        data["first_name"], data["last_name"], data["email"],
-                        data["phone"], data["address"], data["zipcode"], data["place"]
+                        data["first_name"],
+                        data["last_name"],
+                        data["email"],
+                        data["phone"],
+                        data["address"],
+                        data["zipcode"],
+                        data["place"]
                     ]
                     if any(f.strip() == "" for f in required_fields):
                         messages.error(request, "Por favor completa todos los campos antes de continuar.")
@@ -119,16 +118,12 @@ def cart_detail(request):
                         amount=total,
                         send_email=False,
                     )
-
                     log_event(
                         request,
                         action=f"💳 Inició proceso de pago para orden #{order.id}",
                         page="cart/checkout",
                         extra_data={"order_id": order.id, "monto_total": total}
                     )
-
-                    # Usamos la URL dinámica para Mercado Pago
-                    base_url = settings.BASE_URL  # Usamos BASE_URL configurada
 
                     mp = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
                     preference_data = {
@@ -147,19 +142,17 @@ def cart_detail(request):
                             "email": data["email"],
                         },
                         "back_urls": {
-                            "success": f"{base_url}/cart/success/",  # URL dinámica
-                            "failure": f"{base_url}/cart/failure/",
-                            "pending": f"{base_url}/cart/pending/",
+                            "success": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/success/",
+                            "failure": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/failure/",
+                            "pending": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/pending/",
                         },
                         "auto_return": "approved",
                         "binary_mode": True,
-                        "notification_url": f"{base_url}/cart/webhook/",  # URL dinámica para webhook
+                        "notification_url": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/webhook/",
                         "external_reference": str(order.id),
                     }
-
                     result = mp.preference().create(preference_data)
                     init_point = result.get("response", {}).get("init_point")
-
                     if not init_point:
                         messages.error(request, "No se pudo generar el enlace de pago.")
                         log_event(
@@ -171,7 +164,6 @@ def cart_detail(request):
                         return redirect("cart:cart")
 
                     return redirect(init_point)
-
                 except Exception as e:
                     print("❌ Error al generar pago:", e)
                     messages.error(request, f"Error al procesar el pago: {e}")
@@ -182,7 +174,6 @@ def cart_detail(request):
                         extra_data={"error": str(e), "cart_total": cart.get_total_cost()},
                     )
                     return redirect("cart:cart")
-
             messages.error(request, "Formulario inválido.")
             log_event(
                 request,
@@ -191,7 +182,6 @@ def cart_detail(request):
                 extra_data={"raw_post_data": request.POST.dict()},
             )
             return redirect("cart:cart")
-
         else:
             form = CheckoutForm(initial=initial_data)
 
@@ -208,16 +198,14 @@ def cart_detail(request):
             "cart": cart,
             "mp_public_key": settings.MERCADOPAGO_PUBLIC_KEY,
         })
-
     except Exception as e:
         log_event(
             request,
             action="Error general en cart_detail",
             page="cart/detail",
-            extra_data={"error": str(e)} 
+            extra_data={"error": str(e)},
         )
         raise
-
 
 # ✅ ÉXITO DE COMPRA
 @login_required
@@ -229,20 +217,17 @@ def success(request):
     log_event(request, f"✅ Pago exitoso en orden #{order.id if order else 'desconocida'}", page="cart/success")
     return render(request, "cart/success.html", {"order": order})
 
-
 # ❌ PAGO FALLIDO
 def failure(request):
     messages.error(request, "❌ El pago fue rechazado o cancelado.")
     log_event(request, "❌ Pago fallido o cancelado", status="error", page="cart/failure")
     return redirect("cart:cart")
 
-
 # ⏳ PAGO PENDIENTE
 def pending(request):
     messages.info(request, "🕓 El pago está pendiente de confirmación.")
     log_event(request, "🕓 Pago pendiente de confirmación", page="cart/pending")
     return redirect("cart:cart")
-
 
 # 🧠 BOT: CARRITO TEMPORAL
 @login_required
@@ -263,12 +248,10 @@ def checkout_start(request):
     cart = Cart(request)
     for item in temp_cart.items.all():
         cart.add(item.product.id, item.quantity)
-
     temp_cart.delete()
+
     log_event(request, "🧠 Checkout iniciado desde bot", page="cart/checkout_start")
     return redirect("cart:cart")
-
-
 
 @csrf_exempt
 def webhook(request):
@@ -277,7 +260,6 @@ def webhook(request):
         payload_raw = request.body.decode("utf-8") or "{}"
         payload = json.loads(payload_raw)
         print("📩 Webhook recibido:", json.dumps(payload, indent=4))
-
         # 🧠 Log inicial del webhook recibido
         log_event(
             request,
@@ -287,12 +269,7 @@ def webhook(request):
         )
 
         topic = payload.get("type") or request.GET.get("topic")
-        payment_id = (
-            payload.get("data", {}).get("id")
-            or request.GET.get("data.id")
-            or request.GET.get("id")
-        )
-
+        payment_id = (payload.get("data", {}).get("id") or request.GET.get("data.id") or request.GET.get("id"))
         if not payment_id:
             log_event(
                 request,
@@ -385,7 +362,6 @@ def webhook(request):
                 "status": data.get("status_detail")
             }
         )
-
         return JsonResponse({"status": "ok"}, status=200)
 
     except Exception as e:

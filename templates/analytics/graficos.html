@@ -1,0 +1,131 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block content %}
+<main class="container text-center mt-5" style="max-width: 1100px;">
+  <h1>📊 Gráficos Dinámicos de Actividad</h1>
+  <p class="text-muted mb-4">Visualiza la actividad de los usuarios según los logs registrados.</p>
+
+  <!-- 📈 Gráfico de barras diario -->
+  <div class="card mb-4" style="background:#fff; padding:2rem; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <h2 style="color:#0d9488; font-weight:600;">Usuarios conectados por día</h2>
+      <div>
+        <label for="rango" style="font-weight:bold; margin-right:8px;">Rango:</label>
+        <select id="rango" style="padding:8px; border-radius:5px; border:1px solid #ddd;">
+          <option value="7" selected>📅 Últimos 7 días</option>
+          <option value="14">🗓️ Últimos 14 días</option>
+        </select>
+      </div>
+    </div>
+    <div style="height:280px;">
+      <canvas id="usuariosChart"></canvas>
+    </div>
+  </div>
+
+  <!-- ⏰ Gráfico de actividad por hora -->
+  <div class="card mb-4" style="background:#fff; padding:2rem; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <h2 style="color:#0d9488; font-weight:600;">Actividad por hora del día</h2>
+      <div>
+        <label for="periodo" style="font-weight:bold; margin-right:8px;">Periodo:</label>
+        <select id="periodo" style="padding:8px; border-radius:5px; border:1px solid #ddd;">
+          <option value="historico" selected>📜 Histórico</option>
+          <option value="mensual">🗓️ Último mes</option>
+          <option value="semanal">📅 Últimos 7 días</option>
+          <option value="diario">☀️ Hoy</option>
+        </select>
+      </div>
+    </div>
+    <div style="height:250px;">
+      <canvas id="horasChart"></canvas>
+    </div>
+  </div>
+
+  <!-- 🥧 Gráfico de torta -->
+  <div class="card" style="display:flex; flex-wrap:wrap; justify-content:center; gap:2rem; align-items:center; background:#fff; padding:2rem; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+    <div style="flex:1 1 45%; min-width:350px; height:260px;">
+      <canvas id="erroresChart"></canvas>
+    </div>
+
+    <div id="erroresInfo" style="flex:1 1 35%; min-width:260px; text-align:left; background:#f9fafb; padding:1.5rem 2rem; border-radius:10px; box-shadow:inset 0 0 5px rgba(0,0,0,0.05);">
+      <h3 style="color:#0d9488; font-weight:700; margin-bottom:1rem;">Resumen de eventos</h3>
+      <p><strong style="color:#ef4444;">❌ Errores:</strong> <span id="erroresTotal">0</span></p>
+      <p><strong style="color:#10b981;">✅ Correctos:</strong> <span id="correctosTotal">0</span></p>
+      <hr style="margin:1rem 0; border:none; border-top:1px solid #ddd;">
+      <p><strong>Porcentaje de errores:</strong> <span id="porcentajeErrores">0%</span></p>
+      <p><strong>Porcentaje de eventos correctos:</strong> <span id="porcentajeCorrectos">0%</span></p>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+Chart.defaults.responsive = true;
+Chart.defaults.maintainAspectRatio = false;
+
+const animOpts = { duration: 600, easing: "easeInOutQuad" };
+
+// 🟩 Usuarios por día
+const usuariosChart = new Chart(document.getElementById('usuariosChart'), {
+  type: 'bar',
+  data: { labels: [], datasets: [{ label: 'Usuarios por día', data: [], backgroundColor: '#0d9488', borderRadius: 6 }] },
+  options: { animation: animOpts, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+});
+
+// 🟨 Actividad por hora
+const horasChart = new Chart(document.getElementById('horasChart'), {
+  type: 'line',
+  data: { labels: [], datasets: [{ label: 'Eventos por hora', data: [], borderColor: '#0d9488', backgroundColor: 'rgba(13,148,136,0.25)', fill: true, tension: 0.3 }] },
+  options: { animation: animOpts, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+});
+
+// 🥧 Errores
+const erroresChart = new Chart(document.getElementById('erroresChart'), {
+  type: 'pie',
+  data: { labels: ['Errores', 'Correctos'], datasets: [{ data: [0, 0], backgroundColor: ['#ef4444', '#10b981'] }] },
+  options: { animation: animOpts, plugins: { legend: { display: true, position: 'bottom' } } }
+});
+
+async function actualizarDatos() {
+  const rango = document.getElementById('rango').value;
+  const periodo = document.getElementById('periodo').value;
+
+  const [resDias, resHoras] = await Promise.all([
+    fetch(`/analytics/api/data/?rango=${rango}`),
+    fetch(`/analytics/api/horas/?periodo=${periodo}`)
+  ]);
+
+  const dataDias = await resDias.json();
+  const dataHoras = await resHoras.json();
+
+  // 📊 Actualizar gráfico de días
+  usuariosChart.data.labels = dataDias.usuarios.map(e => e.fecha);
+  usuariosChart.data.datasets[0].data = dataDias.usuarios.map(e => e.total);
+  usuariosChart.update();
+
+  // ⏰ Actualizar gráfico de horas
+  horasChart.data.labels = dataHoras.labels;
+  horasChart.data.datasets[0].data = dataHoras.values;
+  horasChart.update();
+
+  // 🥧 Actualizar gráfico de errores
+  const errores = dataDias.errores;
+  const correctos = dataDias.total - errores;
+  erroresChart.data.datasets[0].data = [errores, correctos];
+  erroresChart.update();
+
+  // 📋 Actualizar info
+  const total = errores + correctos;
+  document.getElementById('erroresTotal').textContent = errores;
+  document.getElementById('correctosTotal').textContent = correctos;
+  document.getElementById('porcentajeErrores').textContent = total ? ((errores / total) * 100).toFixed(1) + "%" : "0%";
+  document.getElementById('porcentajeCorrectos').textContent = total ? ((correctos / total) * 100).toFixed(1) + "%" : "0%";
+}
+
+actualizarDatos();
+document.getElementById('rango').addEventListener('change', actualizarDatos);
+document.getElementById('periodo').addEventListener('change', actualizarDatos);
+setInterval(actualizarDatos, 30000);
+</script>
+{% endblock %}

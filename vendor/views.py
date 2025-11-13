@@ -15,7 +15,10 @@ def register_customer_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect('core:home')
+            if user.is_staff or user.is_superuser:
+                return redirect('core:admin_landing')  
+            else:
+                return redirect('core:home')
 
     else:
         form = SignUpForm()
@@ -51,19 +54,20 @@ def register_vendor_view(request):
             user = form.save()
             login(request, user)
 
-            # 🔍 Obtener el país del Profile
             profile = Profile.objects.get(user=user)
             country = profile.country
 
-            # 🧑‍🍳 Crear automáticamente el Vendor
             Vendor.objects.create(
                 name=store_name if store_name else user.username,
                 created_by=user,
                 country=country
             )
 
-            return redirect('core:home')
-
+            # 🔁 Redirección condicional
+            if user.is_staff or user.is_superuser:
+                return redirect('core:admin_landing')
+            else:
+                return redirect('core:home')
     else:
         form = SignUpForm()
 
