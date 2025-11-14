@@ -4,7 +4,7 @@ from django.utils import timezone
 from product.models import Product
 
 
-# 🛒 Carrito temporal (usado por el bot ManyChat)
+#Carrito temporal usado por el bot ManyChat
 class TempCart(models.Model):
     """
     Carrito temporal usado por el bot de ManyChat antes de que el usuario inicie sesión.
@@ -38,7 +38,7 @@ class TempCart(models.Model):
         return sum(item.quantity for item in self.items.all())
 
 
-# 🧾 Items dentro del carrito temporal
+#tems dentro del carrito temporal
 class TempItem(models.Model):
     """
     Item dentro de un carrito temporal (producto + cantidad).
@@ -59,7 +59,7 @@ class TempItem(models.Model):
         return self.product.price * self.quantity
 
 
-# 🔐 Token temporal de login automático
+# Token temporal de login automático
 class LoginToken(models.Model):
     """
     Token de login temporal para acceder automáticamente al carrito sin ingresar credenciales.

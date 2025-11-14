@@ -17,11 +17,11 @@ from botapi.models import TempCart, TempItem, LoginToken
 # 🛒 Crear carrito temporal
 @csrf_exempt
 def create_cart(request):
-    """Crea un carrito temporal único por número de teléfono (wa_id) y devuelve su token."""
+    """Crea un carrito temporal único por número de teléfono (wa_id) y devuelve su token"""
     phone = request.GET.get("phone")  # viene desde ManyChat como ?phone={{wa_id}}
     token = str(uuid.uuid4())
 
-    # 🧹 Limpia carritos anteriores del mismo número (por seguridad)
+    #Limpia carritos anteriores del mismo número (por seguridad)
     if phone:
         TempCart.objects.filter(phone=phone).delete()
         TempCart.objects.create(token=token, phone=phone)
@@ -29,11 +29,11 @@ def create_cart(request):
         # Fallback si no llega el número (no debería pasar)
         TempCart.objects.create(token=token)
 
-    # 🔁 Respuesta simple y limpia (ManyChat-friendly)
+    #  Respuesta simple
     return JsonResponse({"token": token})
 
 
-# 📱 Verificar si el usuario ya está registrado
+# erificar si el usuario ya está registrado
 @csrf_exempt
 def check_user(request):
     phone = request.GET.get("phone")
@@ -54,7 +54,7 @@ def check_user(request):
         })
 
 
-# 🍕 Listar pizzas (texto plano compatible con WhatsApp)
+# Listar pizzastexto plano compatible con WhatsApp
 @csrf_exempt
 def pizzas_cards(request):
     pizzas = Product.objects.all().order_by("id")
@@ -81,7 +81,7 @@ def pizzas_cards(request):
     return JsonResponse({"text": message}, safe=False)
 
 
-# ➕ Agregar productos al carrito temporal
+# Agregar productos al carrito temporal
 @csrf_exempt
 def add_to_cart(request):
     """Agrega productos al carrito temporal (acepta solo número, add_ID o JSON)."""
@@ -98,42 +98,42 @@ def add_to_cart(request):
         return JsonResponse({
             "status": "error",
             "message": "⚠️ Usa POST o GET para agregar al carrito."
-        }, status=200)  # 👈 antes era 405
+        }, status=200) 
 
-    print("📦 Datos recibidos en add_to_cart:", data)
+    print(" Datos recibidos en add_to_cart:", data)
 
     token = data.get("token")
     product_id = data.get("product_id", "") or data.get("message_text", "")
     quantity = data.get("quantity", 1)
 
-    # 🧱 Validación: token obligatorio
+    # Validación token obligatorio
     if not token:
         return JsonResponse({
             "status": "error",
             "message": "⚠️ No se encontró el carrito. Escribe *hola* para comenzar un nuevo pedido."
-        }, status=200)  # 👈 antes 400
+        }, status=200)  
 
     # Limpieza del product_id
     if isinstance(product_id, str):
         product_id = product_id.strip().replace("add_", "").replace("{", "").replace("}", "").strip()
 
-    # 🧩 Validar que haya un número
+    #  Validar que haya un número
     if not product_id:
         return JsonResponse({
             "status": "error",
             "message": "⚠️ Falta el número del producto. Escribe *ver pizzas* para ver los números disponibles."
-        }, status=200)  # 👈 antes 400
+        }, status=200) 
 
-    # 🧩 Validar que sea número entero
+    #Validar que sea número entero
     try:
         product_id = int(product_id)
     except ValueError:
         return JsonResponse({
             "status": "error",
             "message": f"❌ ID inválido: {product_id}. Escribe *ver pizzas* para ver los números disponibles."
-        }, status=200)  # 👈 antes 400
+        }, status=200)  
 
-    # 🧩 Validar cantidad
+    #  Validar cantidad
     try:
         quantity = int(quantity)
         if quantity <= 0:
@@ -141,7 +141,7 @@ def add_to_cart(request):
     except Exception:
         quantity = 1
 
-    # 🛒 Buscar carrito válido
+    #  Buscar carrito válido
     try:
         cart = TempCart.objects.get(token=token)
     except TempCart.DoesNotExist:
@@ -150,16 +150,16 @@ def add_to_cart(request):
             "message": "❌ Carrito no encontrado. Escribe *hola* para crear uno nuevo."
         }, status=200)  # 👈 antes 404
 
-    # 🍕 Buscar producto — aquí reforzamos el mensaje
+    #Buscar producto  reforzamos el mensaje
     try:
         product = Product.objects.get(id=product_id)
     except Product.DoesNotExist:
         return JsonResponse({
             "status": "error",
             "message": f"🍕 El producto con ID {product_id} no existe. Intenta con otro número o escribe *ver pizzas* para ver la lista."
-        }, status=200)  # 👈 antes 404
+        }, status=200)  
 
-    # 🧾 Agregar o actualizar item
+    #  Agregar o actualizar item
     item, created = TempItem.objects.get_or_create(
         cart=cart, product=product, defaults={"quantity": quantity}
     )
@@ -173,11 +173,11 @@ def add_to_cart(request):
     return JsonResponse({
         "status": "success",
         "message": message
-    }, status=200)  # 👈 mantiene 200
+    }, status=200) 
 
 
 
-# 👀 Ver contenido del carrito temporal
+#Ver contenido del carrito temporal
 @csrf_exempt
 def view_cart(request):
     """Devuelve el contenido del carrito temporal en formato texto (WhatsApp-friendly)."""
@@ -218,7 +218,7 @@ def view_cart(request):
         return JsonResponse({"text": "❌ Carrito no encontrado."}, status=404)
 
 
-# 💳 Generar link de pago
+#Generar link de pago
 @csrf_exempt
 def pay_order(request):
     """Genera un link de pago con login automático para transferir el carrito temporal."""
@@ -270,7 +270,7 @@ def pay_order(request):
     })
 
 
-# 🔐 Login automático y transferencia de carrito
+#Login automático y transferencia de carrito
 @csrf_exempt
 def auto_login(request, token):
     """Inicia sesión automáticamente y transfiere el carrito temporal al real."""
@@ -309,5 +309,5 @@ def auto_login(request, token):
         except TempCart.DoesNotExist:
             print("⚠️ No se encontró el carrito temporal.")
 
-    print("🔐 Login automático completado, redirigiendo a /cart/")
+    print(" Login automático completado, redirigiendo a /cart/")
     return redirect("/cart/")

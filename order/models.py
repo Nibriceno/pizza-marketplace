@@ -12,11 +12,9 @@ class Order(models.Model):
     place = models.CharField(max_length=100)
     phone = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
-    paid_amount = models.IntegerField(default=0)
-
-    # 🔹 NUEVOS CAMPOS
-    paid = models.BooleanField(default=False)  # ✅ permite marcar la orden como pagada
-    status = models.CharField(                 # opcional, para mostrar el estado del pedido
+    paid_amount = models.IntegerField(default=0)    
+    paid = models.BooleanField(default=False)
+    status = models.CharField(                
         max_length=20,
         choices=[
             ("pending", "Pendiente"),

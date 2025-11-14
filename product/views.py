@@ -2,57 +2,81 @@ import random
 from django.contrib import messages
 from django.shortcuts import redirect, render, get_object_or_404
 from django.db.models import Q
+
 from product.models import Product
-from .models import Category, Product
+from .models import Category
 from .forms import AddToCartForm
 from cart.cart import Cart
 from core.models import Country
 
 
+
+# FUNCION CENTRAL PARA OBTENER LA COMUNA ACTIVA
+def get_active_comuna(request):
+    
+    temp = request.session.get("temp_comuna")
+    if temp:
+        return temp
+
+    # 2) Comuna del perfil (si existe)
+    user = request.user
+    if user.is_authenticated:
+        profile = getattr(user, "profile", None)
+        if profile and profile.comuna:
+            return profile.comuna.nombre
+
+    return None
+
+
+# 
+#  PRODUCT DETAIL
+
 def product(request, category_slug, product_slug):
-    from analytics.utils import log_event  # 🔹 Import local para evitar dependencias circulares
+    from analytics.utils import log_event
 
     cart = Cart(request)
     product = get_object_or_404(Product, category__slug=category_slug, slug=product_slug)
 
-    # 🧭 Verificamos país del usuario
-    if request.user.is_authenticated and hasattr(request.user, 'profile') and request.user.profile.country:
-        user_country = request.user.profile.country
-        if product.vendor.country != user_country:
-            messages.warning(request, f"🚫 Esta pizza no está disponible en tu país ({user_country.name}).")
-            return redirect('product:category', category_slug=category_slug)
-    else:
-        messages.warning(request, "Debes iniciar sesión para ver este producto.")
-        return redirect('vendor:login')
+    #FILTRO POR PAISS
+    if request.user.is_authenticated and hasattr(request.user, "profile") and request.user.profile.country:
+        if product.vendor.country != request.user.profile.country:
+            messages.warning(request, "🚫 Esta pizza no está disponible en tu país.")
+            return redirect("product:category", category_slug=category_slug)
 
-    # ⚙️ Evita duplicar logs tras agregar al carrito
+    #FILTRO POR COMUNA
+    comuna_activa = get_active_comuna(request)
+    vendor_comuna = getattr(product.vendor.created_by.profile.comuna, "nombre", None)
+
+    if comuna_activa and vendor_comuna and comuna_activa.lower() != vendor_comuna.lower():
+        messages.warning(request, f"🚫 Esta pizza no está disponible en tu comuna ({comuna_activa}).")
+        return redirect("product:category", category_slug=category_slug)
+
+    # LOGS evitar duplicados
     current_view = f"view_{product.id}"
-    last_view = request.session.get("last_product_view")
-
-    # 👀 Solo loguear si es un GET normal y no viene de un POST anterior
-    if request.method == "GET" and last_view != current_view:
+    if request.method == "GET" and request.session.get("last_product_view") != current_view:
         log_event(
             request,
             action=f"👀 Vio producto '{product.title}'",
             page="product/detail",
             product_id=product.id,
-            extra_data={"precio": product.price}  # ✅ solo precio (no hay cantidad aún)
+            extra_data={"precio": product.price}
         )
         request.session["last_product_view"] = current_view
 
-    # 🪙 Moneda
-    currency_symbol = product.vendor.country.currency_symbol or ''
-    currency_code = product.vendor.country.currency or ''
+    #  AGREGAR AL CARRITO
+    if request.method == "POST":
 
-    # 🛒 Agregar al carrito
-    if request.method == 'POST':
+        # Si NO está logueado  solo mostrar mensaje y volver al producto
+        if not request.user.is_authenticated:
+            messages.error(request, "Debes iniciar sesión para agregar productos al carrito.")
+            return redirect("product:product", category_slug=category_slug, product_slug=product_slug)
+
         form = AddToCartForm(request.POST)
         if form.is_valid():
-            quantity = form.cleaned_data['quantity']
+            quantity = form.cleaned_data["quantity"]
             cart.add(product_id=product.id, quantity=quantity, update_quantity=False)
-            messages.success(request, "El producto fue agregado al carrito.")
+            messages.success(request, "Producto agregado al carrito.")
 
-            # 🧠 Log: el usuario seleccionó este producto (con detalles)
             log_event(
                 request,
                 action=f"🖱️ Seleccionó producto '{product.title}' (x{quantity})",
@@ -65,82 +89,108 @@ def product(request, category_slug, product_slug):
                 }
             )
 
-            # 🧩 Marcar que el siguiente GET proviene de este POST
             request.session["last_product_view"] = current_view
-
-            return redirect('product:product', category_slug=category_slug, product_slug=product_slug)
+            return redirect("product:product", category_slug=category_slug, product_slug=product_slug)
     else:
         form = AddToCartForm()
 
-    # 🧭 Productos similares
-    similar_products = list(product.category.products.exclude(id=product.id))
-    if len(similar_products) >= 4:
-        similar_products = random.sample(similar_products, 4)
+    #  PRODUCTOS SIMILARES (filtrados por país y comuna)
+    similar = Product.objects.filter(category=product.category).exclude(id=product.id)
 
-    context = {
-        'product': product,
-        'similar_products': similar_products,
-        'form': form,
-        'currency_symbol': currency_symbol,
-        'currency_code': currency_code,
-    }
+    if request.user.is_authenticated and hasattr(request.user, "profile") and request.user.profile.country:
+        similar = similar.filter(vendor__country=request.user.profile.country)
 
-    return render(request, 'product/product.html', context)
+    if comuna_activa:
+        similar = similar.filter(
+            vendor__created_by__profile__comuna__nombre__iexact=comuna_activa
+        )
 
+    similar = list(similar)
+    if len(similar) > 4:
+        similar = random.sample(similar, 4)
+
+    return render(request, "product/product.html", {
+        "product": product,
+        "similar_products": similar,
+        "form": form,
+        "currency_symbol": product.vendor.country.currency_symbol,
+        "currency_code": product.vendor.country.currency,
+        "comuna": comuna_activa,
+    })
+
+
+
+
+
+# CATEGORY
 
 def category(request, category_slug):
     from analytics.utils import log_event
 
-    category = get_object_or_404(Category, slug=category_slug)
-    products = []
+    categoria = get_object_or_404(Category, slug=category_slug)
 
-    # 🔓 Si el usuario está logueado → usar su país
-    if request.user.is_authenticated and hasattr(request.user, 'profile') and request.user.profile.country:
-        user_country = request.user.profile.country
-        products = Product.objects.filter(
-            category=category,
-            vendor__created_by__profile__country=user_country
-        )
+    #  FILTRAR POR PAIS
+    if request.user.is_authenticated and hasattr(request.user, "profile") and request.user.profile.country:
+        products = Product.objects.filter(category=categoria, vendor__country=request.user.profile.country)
     else:
-        country_id = request.session.get('selected_country')
+        country_id = request.session.get("selected_country")
         if country_id:
             try:
                 country = Country.objects.get(id=country_id)
-                products = Product.objects.filter(
-                    category=category,
-                    vendor__created_by__profile__country=country
-                )
+                products = Product.objects.filter(category=categoria, vendor__country=country)
             except Country.DoesNotExist:
                 products = []
+        else:
+            products = []
 
-    # 🧠 Log: el usuario visitó esta categoría
+    #  FILTRAR POR COMUNA
+    comuna_activa = get_active_comuna(request)
+    if comuna_activa:
+        products = products.filter(
+            vendor__created_by__profile__comuna__nombre__iexact=comuna_activa
+        )
+
+    
     log_event(
         request,
-        action=f"📂 Entró a la categoría '{category.title}'",
+        action=f"📂 Entró a la categoría '{categoria.title}'",
         page="product/category",
         extra_data={"productos_disponibles": len(products)}
     )
 
-    return render(request, 'product/category.html', {
-        'category': category,
-        'products': products,
+    return render(request, "product/category.html", {
+        "category": categoria,
+        "products": products,
+        "comuna": comuna_activa,
     })
 
+
+
+#  SEARCH
 
 def search(request):
     from analytics.utils import log_event
 
     query = request.GET.get('query', '')
     products = Product.objects.filter(
-        Q(title__icontains=query) | Q(description__icontains=query)
+        Q(title__icontains=query) |
+        Q(description__icontains=query)
     )
 
-    # 🧭 Filtrar por país si el usuario está logueado
-    if request.user.is_authenticated and hasattr(request.user, 'profile') and request.user.profile.country:
-        user_country = request.user.profile.country
-        products = products.filter(vendor__country=user_country)
+    # 🌍 País
+    if request.user.is_authenticated and hasattr(request.user, "profile") and request.user.profile.country:
+        products = products.filter(
+            vendor__country=request.user.profile.country
+        )
 
-    # 🧠 Log: búsqueda
+    # 📍 Comuna
+    comuna_activa = get_active_comuna(request)
+    if comuna_activa:
+        products = products.filter(
+            vendor__created_by__profile__comuna__nombre__iexact=comuna_activa
+        )
+
+    
     if query.strip():
         log_event(
             request,
@@ -149,23 +199,30 @@ def search(request):
             extra_data={"resultados": products.count()}
         )
 
-    return render(request, 'product/search.html', {
-        'products': products,
-        'query': query
+    return render(request, "product/search.html", {
+        "products": products,
+        "query": query,
+        "comuna": comuna_activa,
     })
 
 
 def home(request):
-    newest_products = Product.objects.all().order_by('-id')
+    products = Product.objects.all().order_by("-id")
 
-    # 🧭 Filtrar por país si el usuario está logueado
-    if request.user.is_authenticated and hasattr(request.user, 'profile') and request.user.profile.country:
-        user_country = request.user.profile.country
-        newest_products = newest_products.filter(vendor__country=user_country)
+    # PaIs
+    if request.user.is_authenticated and hasattr(request.user, "profile") and request.user.profile.country:
+        products = products.filter(
+            vendor__country=request.user.profile.country
+        )
 
-    # 🪄 Limitar a 12 productos recientes
-    newest_products = newest_products[:12]
+    # Comuna
+    comuna_activa = get_active_comuna(request)
+    if comuna_activa:
+        products = products.filter(
+            vendor__created_by__profile__comuna__nombre__iexact=comuna_activa
+        )
 
-    return render(request, 'core/frontpage.html', {
-        'newest_products': newest_products
+    return render(request, "core/frontpage.html", {
+        "newest_products": products[:12],
+        "comuna": comuna_activa,
     })

@@ -3,7 +3,7 @@ from .models import Vendor
 
 from .models import Profile
 
-# Register your models here.
+
 admin.site.register(Vendor)
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):

@@ -1,21 +1,27 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
-from product.models import Product
-from .models import Country
-from django.contrib.auth.decorators import user_passes_test
-from django.urls import reverse_lazy
-from django.contrib.auth.views import LoginView
-from analytics.utils import log_event
 from django.contrib import messages
+from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.views import LoginView
+from django.urls import reverse_lazy
+from django.views.decorators.http import require_POST
+import json
+
+from product.models import Product
+from core.models import Country
+from cart.cart import Cart
+from analytics.utils import log_event
+from product.views import get_active_comuna
 
 
 
-#  Página principal
+# PAGINA PRINCIPALL
+
 def frontpage(request):
     countries = Country.objects.all()
     selected_country = request.GET.get('country')
 
-    # 🧠 Si el usuario selecciona un país, guardarlo en la sesión
+    # Guardar país seleccionado en sesión
     if selected_country:
         request.session['selected_country'] = selected_country
     else:
@@ -23,7 +29,7 @@ def frontpage(request):
 
     newest_products = Product.objects.all().order_by('-id')
 
-    # 🔒 Si el usuario NO está logueado
+    # Usuario NO logueado → usar país seleccionado
     if not request.user.is_authenticated:
         if selected_country:
             try:
@@ -36,59 +42,72 @@ def frontpage(request):
         else:
             newest_products = []
     else:
-        # 🔓 Si el usuario está logueado y tiene país
-        if hasattr(request.user, 'profile') and request.user.profile.country:
-            user_country = request.user.profile.country
+        # Usuario logueado  usar país del perfil
+        profile = getattr(request.user, "profile", None)
+        if profile and profile.country:
+            user_country = profile.country
             newest_products = newest_products.filter(
                 vendor__created_by__profile__country=user_country
             )
             selected_country = user_country.id
-            request.session['selected_country'] = user_country.id  # guarda en sesión también
+            request.session['selected_country'] = user_country.id
 
-    newest_products = newest_products[:8]
+    # Filtro por comuna activa
+    comuna_activa = get_active_comuna(request)
+    if comuna_activa:
+        newest_products = newest_products.filter(
+            vendor__created_by__profile__comuna__nombre__iexact=comuna_activa
+        )
 
-    context = {
-        'countries': countries,
-        'selected_country': selected_country,
-        'newest_products': newest_products,
-    }
+    return render(request, "core/frontpage.html", {
+        "countries": countries,
+        "selected_country": selected_country,
+        "newest_products": newest_products[:12],
+        "comuna": comuna_activa,
+    })
 
-    return render(request, 'core/frontpage.html', context)
 
+#CONTACTO
 
-# 📞 Página de contacto
 def contactpage(request):
     return render(request, 'core/contact.html')
 
 
-# ☎️ Obtener prefijo telefónico por país (JSON)
+
+# PREFIJO TELEFÓNICO
+
 def get_country_phone_code(request, pk):
     country = Country.objects.get(pk=pk)
     return JsonResponse({'phone_code': country.phone_code})
 
 
-# 🔁 Redirección al home de products
+
+#REDIRECCIÓN A PRODUCT HOME
+
 def home(request):
     return redirect('product:home')
 
+
+
+#ADMIN LANDING
 
 @user_passes_test(lambda u: u.is_staff or u.is_superuser)
 def admin_landing(request):
     return render(request, 'core/admin_landing.html')
 
 
+
+# LOGIN PERSONALIZADO
+
 class CustomLoginView(LoginView):
     template_name = 'vendor/login.html'
 
     def form_valid(self, form):
-        """Cuando el login es correcto"""
         response = super().form_valid(form)
         user = self.request.user
 
-        # ✅ Mensaje visual de bienvenida
         messages.success(self.request, f"👋 Bienvenido {user.username}")
 
-        # 📊 Registrar el evento de inicio de sesión
         log_event(
             self.request,
             action=f"👤 Usuario inició sesión ({user.username})",
@@ -98,12 +117,10 @@ class CustomLoginView(LoginView):
         return response
 
     def form_invalid(self, form):
-        """Cuando el login falla"""
-        messages.error(self.request, "⚠️ Usuario o contraseña incorrectos. Inténtalo nuevamente.")
+        messages.error(self.request, "⚠️ Usuario o contraseña incorrectos.")
         return super().form_invalid(form)
 
     def get_success_url(self):
-        """Redirección condicional según tipo de usuario"""
         user = self.request.user
 
         if user.is_staff or user.is_superuser:
@@ -114,7 +131,105 @@ class CustomLoginView(LoginView):
             return reverse_lazy('core:home')
 
 
+
+#  404 PERSONALIZADO
+
 def custom_404(request, exception=None):
-    """Página personalizada para errores 404"""
     return render(request, 'core/404.html', status=404)
 
+
+
+#  1. Guardar ubicacion manual si se requiere
+
+# @require_POST
+# def set_location(request):
+#     region = request.POST.get("region")
+#     provincia = request.POST.get("provincia")
+#     comuna = request.POST.get("comuna")
+
+#     request.session["temp_region"] = region
+#     request.session["temp_provincia"] = provincia
+#     request.session["temp_comuna"] = comuna
+
+#     return redirect(request.META.get("HTTP_REFERER", "/"))
+
+
+
+#  Guardar ubicacion automatica con ajax
+
+@require_POST
+def set_location_auto(request):
+    data = json.loads(request.body)
+    comuna = data.get("comuna")
+
+    # Guardar comuna "temporal" en sesión
+    request.session["temp_comuna"] = comuna
+    request.session["temp_region"] = None
+    request.session["temp_provincia"] = None
+
+    # Limpiar carrito según nueva comuna
+    mensaje = limpiar_carrito_por_comuna(request, comuna)
+
+    return JsonResponse({
+        "status": "ok",
+        "message": mensaje,
+    })
+
+
+
+# Limpiar productos incompatibles del carrito
+
+def limpiar_carrito_por_comuna(request, nueva_comuna):
+    cart = Cart(request)
+    productos_eliminados = 0
+
+    # congelar lista antes de modificar
+    for item in list(cart):
+        product_obj = None
+        product_id = None
+
+        #  detectar cómo viene el item del carrito
+        if isinstance(item, dict):
+            if "product" in item:
+                product_obj = item["product"]
+            elif "product_id" in item:
+                product_id = item["product_id"]
+            elif "id" in item:
+                product_id = item["id"]
+        else:
+            
+            continue
+
+        if product_obj is None and product_id is not None:
+            try:
+                product_obj = Product.objects.get(id=product_id)
+            except Product.DoesNotExist:
+                continue
+
+        if product_obj is None:
+            continue
+
+        vendor_comuna = getattr(
+            getattr(
+                getattr(product_obj.vendor.created_by, "profile", None),
+                "comuna",
+                None
+            ),
+            "nombre",
+            None
+        )
+
+        if not vendor_comuna:
+            continue
+
+        if vendor_comuna.lower() != nueva_comuna.lower():
+            cart.remove(product_obj.id)
+            productos_eliminados += 1
+
+    if productos_eliminados > 0:
+        mensaje = f"Se eliminaron {productos_eliminados} productos del carrito por no estar disponibles en {nueva_comuna}."
+    else:
+        mensaje = f"Ubicación cambiada a {nueva_comuna}."
+
+    messages.warning(request, mensaje)
+    return mensaje

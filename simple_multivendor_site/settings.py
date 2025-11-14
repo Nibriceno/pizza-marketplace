@@ -2,17 +2,17 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 📌 Cargar variables de entorno
+# Cargar variables de entorno
 load_dotenv()
 
-# 📁 BASE_DIR
+#  BASE_DIR
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# 🛡️ Seguridad
-SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-secret-key')  # ⚠️ Importante: pon DEBUG en False en producción real
-DEBUG = True  # Cambia a False en producción real
+# Seguridad
+SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-secret-key')  
+DEBUG = True  # Cambiar a False en producción real
 
-# 🌐 Hosts permitidos — incluye tu dominio de PythonAnywhere
+#Hosts mi local , ngrok, pythonanywhere
 ALLOWED_HOSTS = [
     'nicolasbriceno.pythonanywhere.com',
     '127.0.0.1',
@@ -24,7 +24,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://nicolasbriceno.pythonanywhere.com"
 ]
 
-# 📦 Apps instaladas
+#Apps instaladas
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -39,8 +39,8 @@ INSTALLED_APPS = [
     'order',
     'widget_tweaks',
     'location',
-    'botapi',  # 🔸 app de logs
-    'analytics',  # 👈 agrégala aquí
+    'botapi',  
+    'analytics', 
 ]
 
 # 🧱 Middleware
@@ -52,11 +52,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 🧱 Middleware personalizado de logs
     'analytics.middleware.ErrorLoggingMiddleware',
 ]
 
-# 🌍 URL y Templates
+# URL y Templates
 ROOT_URLCONF = 'simple_multivendor_site.urls'
 
 TEMPLATES = [
@@ -72,6 +71,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'product.context_processors.menu_categories',
                 'cart.context_processors.cart',
+                'core.context_processors.comuna_context',
             ],
         },
     },

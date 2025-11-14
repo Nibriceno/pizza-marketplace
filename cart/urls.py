@@ -10,6 +10,5 @@ urlpatterns = [
     path('pending/', views.pending, name='pending'),
     path('checkout/start/', views.checkout_start, name='checkout_start'),
     path('webhook/', views.webhook, name='webhook'),
-
 ]
 

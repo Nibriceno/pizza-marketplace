@@ -7,8 +7,8 @@ class UserActionLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     user_name = models.CharField(max_length=150, blank=True, null=True)
     action = models.CharField(max_length=255)
-    page = models.CharField(max_length=100, blank=True, null=True)      # origen: web, manychat, etc.
-    section = models.CharField(max_length=100, blank=True, null=True)   # módulo: productos, carrito, etc.
+    page = models.CharField(max_length=100, blank=True, null=True)      
+    section = models.CharField(max_length=100, blank=True, null=True)   
     product_id = models.IntegerField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     extra_data = models.JSONField(blank=True, null=True)

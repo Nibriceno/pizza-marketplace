@@ -15,9 +15,9 @@ def checkout(
     place,
     phone,
     amount,
-    send_email=True,  # 👈 nuevo parámetro
+    send_email=True,  
 ):
-    # ✅ Crear la orden principal
+    #  Crear la orden principal
     order = Order.objects.create(
         first_name=first_name,
         last_name=last_name,
@@ -31,7 +31,7 @@ def checkout(
 
     cart = Cart(request)
 
-    # 🧾 Crear los ítems de la orden
+    # rear los ítems de la orden
     for item in cart:
         product = item.get("product")
         if not product or not isinstance(product, Product):
@@ -50,7 +50,7 @@ def checkout(
 
         order.vendors.add(product.vendor)
 
-    # 📩 Notificar (solo si se indica)
+    # Notificar (solo si se indica)
     if send_email:
         try:
             notify_vendor(order)

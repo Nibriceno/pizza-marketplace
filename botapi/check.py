@@ -1,11 +1,11 @@
 import re
-from product.models import Product  # 👈 ajusta al nombre real de tu app
+from product.models import Product 
 
-# Expresión regular para detectar caracteres problemáticos
+# Expresion para detectar caracteres problemáticos
 pattern = re.compile(r"[\r\n\t\xa0*~_`]+")
 
 def check_products():
-    print("🔍 Buscando productos con caracteres o campos problemáticos...\n")
+    print(" Buscando productos con caracteres o campos problemáticos...\n")
     found = False
 
     for p in Product.objects.all():
@@ -23,15 +23,15 @@ def check_products():
         except Exception:
             issues.append("💰 Precio no legible")
 
-        # Revisa imagen (si está vacía o con HTTP)
+        # Revisa imagen 
         try:
             image_url = str(p.image.url)
             if not image_url:
-                issues.append("🖼️ Imagen vacía")
+                issues.append(" Imagen vacía")
             elif "http://" in image_url:
-                issues.append("🖼️ Imagen con HTTP (no HTTPS)")
+                issues.append(" Imagen con HTTP (no HTTPS)")
         except Exception:
-            issues.append("🖼️ Sin imagen asociada")
+            issues.append(" Sin imagen asociada")
 
         # Mostrar resultados si hay algo raro
         if issues:
@@ -42,6 +42,6 @@ def check_products():
             print()
 
     if not found:
-        print("✅ Todos los productos están limpios y seguros.")
+        print(" Todos los productos están limpios y seguros.")
 
 check_products()

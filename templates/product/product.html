@@ -10,7 +10,7 @@
         </figure>
     {% endif %}
 
-    <!-- 🪙 Aquí cambiamos el precio para mostrar la moneda dinámica -->
+    <!--Aquí cambiamos el precio para mostrar la moneda dinámica -->
     <h1 class="title">
         {{ product.title }}, {{ currency_symbol }}{{ product.price }} 
         <span style="font-size: 0.9em; color: #777;">{{ currency_code }}</span>
@@ -24,11 +24,7 @@
 
     <hr>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="notification is-success is-toast">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
+
 
     <form method="post" action="">
         {% csrf_token %}

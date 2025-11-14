@@ -10,7 +10,7 @@
     {% csrf_token %}
     <div class="columns is-multiline">
 
-      <!-- 🧑 Datos de usuario -->
+      <!-- Datos de usuario -->
       <div class="column is-half">
         <div class="field">
           <label for="{{ form.username.id_for_label }}" class="label">Nombre de usuario</label>
@@ -43,7 +43,7 @@
         </div>
       </div>
 
-      <!-- 🌎 País -->
+      <!-- País -->
       <div class="column is-half">
         <div class="field">
           <label for="{{ form.country.id_for_label }}" class="label">País</label>
@@ -64,7 +64,7 @@
         </div>
       </div>
 
-      <!-- 🗺️ Región, Provincia, Comuna -->
+      <!-- Región, Provincia, Comuna -->
       <div class="column is-one-third">
         <div class="field">
           <label for="{{ form.region.id_for_label }}" class="label">Región</label>
@@ -95,7 +95,7 @@
         </div>
       </div>
 
-            <!-- 🏠 Dirección -->
+            <!-- Dirección -->
       <div class="column is-half">
         <div class="field">
           <label for="{{ form.address.id_for_label }}" class="label">Dirección</label>
@@ -112,7 +112,7 @@
         </div>
       </div>
 
-      <!-- 🏪 Nombre de la tienda -->
+      <!-- Nombre de la tienda -->
       <div class="column is-full">
         <div class="field">
           <label class="label">Nombre de la tienda (opcional)</label>
@@ -122,7 +122,7 @@
         </div>
       </div>
 
-      <!-- 🔑 Contraseñas -->
+      <!--  Contraseñas -->
       <div class="column is-half">
         <div class="field">
           <label for="{{ form.password1.id_for_label }}" class="label">Contraseña</label>
@@ -141,7 +141,7 @@
 
     </div>
 
-    <!-- 🚀 Botón -->
+    <!--  Botón -->
     <div class="control mt-5">
       <button type="submit" class="button is-primary is-fullwidth">
         Crear cuenta de vendedor
@@ -150,7 +150,7 @@
   </form>
 </div>
 
-<!-- 📱 Código para prefijo telefónico -->
+<!-- Código para prefijo telefónico -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const countrySelect = document.getElementById('id_country');
@@ -187,7 +187,7 @@
   });
 </script>
 
-<!-- 🌎 AJAX para Región → Provincia → Comuna -->
+<!-- AJAX para Región → Provincia → Comuna -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const regionSelect = document.getElementById('id_region');

@@ -7,7 +7,7 @@ from .models import Vendor, Profile
 from product.models import Product
 
 
-# 🧍 Registro de cliente
+#Registro de cliente
 def register_customer_view(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
@@ -23,7 +23,7 @@ def register_customer_view(request):
     else:
         form = SignUpForm()
 
-    # 🎨 Personalización visual
+    # Personalización visual
     for field_name, field in form.fields.items():
         field.widget.attrs['class'] = 'input'
         placeholders = {
@@ -44,7 +44,7 @@ def register_customer_view(request):
     return render(request, 'vendor/become_customer.html', {'form': form})
 
 
-# 🏪 Registro de vendedor
+# Registro de vendedor
 def register_vendor_view(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
@@ -63,7 +63,7 @@ def register_vendor_view(request):
                 country=country
             )
 
-            # 🔁 Redirección condicional
+            # Redirección condicional
             if user.is_staff or user.is_superuser:
                 return redirect('core:admin_landing')
             else:
@@ -71,7 +71,7 @@ def register_vendor_view(request):
     else:
         form = SignUpForm()
 
-    # 🎨 Personalización visual
+    # Personalización visual
     for field_name, field in form.fields.items():
         field.widget.attrs['class'] = 'input'
         placeholders = {
@@ -92,7 +92,7 @@ def register_vendor_view(request):
     return render(request, 'vendor/become_vendor.html', {'form': form})
 
 
-#  Panel del vendedor
+#Panel del vendedor
 @login_required
 def vendor_admin(request):
     context = {}
@@ -121,18 +121,18 @@ def vendor_admin(request):
         context['products'] = products
         context['orders'] = orders
 
-    #  Si es usuario normal
+    # Si es usuario normal
     else:
         context['is_vendor'] = False
         context['username'] = request.user.username
 
     return render(request, 'vendor/vendor_admin.html', context)
 
-#  Agregar producto
+# Agregar producto
 @login_required
 def add_product(request):
     if not hasattr(request.user, 'vendor'):
-        return redirect('core:home')  # seguridad extra
+        return redirect('core:home') 
 
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
@@ -148,7 +148,7 @@ def add_product(request):
     return render(request, 'vendor/add_product.html', {'form': form})
 
 
-#  Eliminar producto
+#Eliminar producto
 @login_required
 def delete_product(request, pk):
     product = get_object_or_404(Product, pk=pk, vendor=request.user.vendor)
@@ -156,7 +156,7 @@ def delete_product(request, pk):
     return redirect('vendor:vendor-admin')
 
 
-#  Editar información del vendedor
+#Editar información del vendedor
 @login_required
 def edit_vendor(request):
     if not hasattr(request.user, 'vendor'):
@@ -180,13 +180,13 @@ def edit_vendor(request):
     return render(request, 'vendor/edit_vendor.html', {'vendor': vendor})
 
 
-#  Lista de vendedores
+#Lista de vendedores
 def vendors(request):
     vendors = Vendor.objects.all()
     return render(request, 'vendor/vendors.html', {'vendors': vendors})
 
 
-#  Perfil de un vendedor
+#Perfil de un vendedor
 def vendor(request, vendor_id):
     vendor = get_object_or_404(Vendor, pk=vendor_id)
     return render(request, 'vendor/vendor.html', {'vendor': vendor})

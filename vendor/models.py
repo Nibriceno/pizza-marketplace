@@ -32,18 +32,18 @@ class Vendor(models.Model):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
-    # 🌍 País y localización geográfica
+    # País y localizacion
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True)
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
     provincia = models.ForeignKey(Provincia, on_delete=models.SET_NULL, null=True, blank=True)
     comuna = models.ForeignKey(Comuna, on_delete=models.SET_NULL, null=True, blank=True)
 
-    # 🏠 Información de contacto
+    # Información de contacto
     phone = PhoneNumberField(region='CL', blank=True)
     address = models.CharField(max_length=255)
     zipcode = models.CharField(max_length=255)
 
-    # 🕒 Fechas
+    # Fechas
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

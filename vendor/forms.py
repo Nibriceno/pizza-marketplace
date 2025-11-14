@@ -29,12 +29,12 @@ class SignUpForm(UserCreationForm):
     last_name = forms.CharField(max_length=255, required=True)
     email = forms.EmailField(max_length=255, required=True)
 
-    # 🌎 Región, Provincia, Comuna
+    #  Región, Provincia, Comuna
     region = forms.ModelChoiceField(queryset=Region.objects.all(), required=False, label="Región")
     provincia = forms.ModelChoiceField(queryset=Provincia.objects.none(), required=False, label="Provincia")
     comuna = forms.ModelChoiceField(queryset=Comuna.objects.none(), required=False, label="Comuna")
 
-    # 🌍 País y Teléfono
+    #  País y Teléfono
     country = forms.ModelChoiceField(
         queryset=Country.objects.none(),
         empty_label='Selecciona un país',
@@ -63,16 +63,16 @@ class SignUpForm(UserCreationForm):
             'password1', 'password2',
         )
 
-    # ---------------------------
-    # 🔧 Inicialización del form
-    # ---------------------------
+    
+    #  Inicialización del form
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Cargar países ordenados alfabéticamente
         self.fields['country'].queryset = Country.objects.all().order_by('name')
 
-        # Si el usuario seleccionó región/provincia, filtramos los selects dependientes
+        # Si el usuario seleccionó región/provincia filtramos los selects dependientes
         if 'region' in self.data:
             try:
                 region_id = int(self.data.get('region'))
@@ -108,9 +108,9 @@ class SignUpForm(UserCreationForm):
             if name in self.fields:
                 self.fields[name].widget.attrs.setdefault('placeholder', ph)
 
-    # ---------------------------
-    # ✅ Validaciones
-    # ---------------------------
+    
+    #  Validaciones
+    
     def clean_country(self):
         country = self.cleaned_data.get('country')
         if not country:
@@ -144,9 +144,9 @@ class SignUpForm(UserCreationForm):
         self.cleaned_data['phone'] = normalized_number
         return normalized_number
 
-    # ---------------------------
-    # 💾 Guardado del usuario
-    # ---------------------------
+   
+    #  Guardado del usuario
+    
     def save(self, commit=True):
         user = super().save(commit=False)
         user.first_name = self.cleaned_data['first_name']

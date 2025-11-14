@@ -1,7 +1,4 @@
 
-
-# Create your views here.
-# location/views.py
 from django.http import JsonResponse
 from .models import Provincia, Comuna
 

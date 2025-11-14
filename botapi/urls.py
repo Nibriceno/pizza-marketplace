@@ -3,7 +3,7 @@ from . import views
 from .views import check_user
 
 urlpatterns = [
-    # 🛒 Carrito temporal
+    #  Carrito temporal
     path("cart/create/", views.create_cart, name="create_cart"),
     path("cart/add/", views.add_to_cart, name="add_to_cart"),
     path("view_cart/", views.view_cart, name="view_cart"), 
@@ -20,7 +20,4 @@ urlpatterns = [
     path("pay_order/", views.pay_order, name="pay_order"),
     # autologin
     path("auto-login/<str:token>/", views.auto_login, name="auto_login"),
-   
-
-
 ]

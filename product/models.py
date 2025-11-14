@@ -1,14 +1,11 @@
-# Form Images
+
 from io import BytesIO
 from os import name
 from PIL import Image
 from django.core.files import File
-
 from django.db import models
 from vendor.models import Vendor
 
-
-# Create your models here.
 class Category(models.Model):
     title = models.CharField(max_length=50)
     slug = models.SlugField(max_length=55)
@@ -49,10 +46,10 @@ class Product(models.Model):
                 return self.thumbnail.url
             
             else:
-                # Default Image
+                
                 return 'https://via.placeholder.com/240x180.jpg'
     
-    # Generating Thumbnail - Thumbnail is created when get_thumbnail is called
+    
     def make_thumbnail(self, image, size=(300, 200)):
         img = Image.open(image)
         img.convert('RGB')

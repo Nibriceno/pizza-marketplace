@@ -1,6 +1,5 @@
 from datetime import timedelta
 import json
-
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate, ExtractHour
@@ -8,7 +7,6 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
-
 from .models import UserActionLog
 from .utils import classify_section
 from vendor.models import Profile
@@ -70,13 +68,13 @@ def dashboard(request):
         else:
             logs = logs.filter(page__icontains=page)
 
-    # Filtrar por sección
+    # Filtrar por seccion
     if section:
         logs = logs.filter(section__icontains=section)
 
     logs = logs.order_by("-timestamp")[:400]
 
-    # --- CONTADORES ---
+    #  CONTADORES
     total = UserActionLog.objects.count()
     errores = UserActionLog.objects.filter(action__icontains="error").count()
     usuarios = UserActionLog.objects.exclude(user=None).values("user").distinct().count()
@@ -173,25 +171,24 @@ def manychat_log(request):
     
 @staff_member_required
 def analytics_data(request):
-    """
-    📊 Devuelve datos para los gráficos de actividad de usuarios.
-    Permite filtrar por rango de días (7 o 14).
+    """     Devuelve datos para los gráficos de actividad de usuarios.
+    Permite filtrar por rango de días 7 o 14.
     """
     try:
-        # 🔢 Leer parámetro de rango (por defecto: 7 días)
+        # parametro de rango por defecto 1 semanaa
         rango = int(request.GET.get("rango", 7))
         if rango not in [7, 14]:
-            rango = 7  # ✅ fallback en caso de valor inválido
+            rango = 7  #  fallback en caso de valor invalido
     except ValueError:
         rango = 7
 
     hoy = now().date()
 
-    # 📆 Generar lista de fechas desde hace 'rango' días hasta hoy
+    #  Generar lista de fechas desde hace 'rango' días hasta hoy
     fecha_inicio = hoy - timedelta(days=rango - 1)
     fechas = [fecha_inicio + timedelta(days=i) for i in range(rango)]
 
-    # 🔍 Buscar logs de login o actividad (visitas)
+    #  Buscar logs de login o actividad 
     logs = (
         UserActionLog.objects.filter(
             Q(action__icontains="inició sesión")
@@ -206,15 +203,15 @@ def analytics_data(request):
         .annotate(total=Count("id"))
     )
 
-    # 🧩 Convertir resultados a diccionario
+    # Convertir resultados a diccionario
     data_dict = {str(item["fecha"]): item["total"] for item in logs}
 
-    # 🔁 Completar los días sin datos con 0
+    # Completar los días sin datos con 0
     data_completa = [
         {"fecha": str(f), "total": data_dict.get(str(f), 0)} for f in fechas
     ]
 
-    # 📊 Totales generales del sistema
+    # Totales generales del sistema
     total = UserActionLog.objects.count()
     errores = UserActionLog.objects.filter(action__icontains="error").count()
 
@@ -226,18 +223,14 @@ def analytics_data(request):
     })
 
 
-
 @staff_member_required
 def graficos(request):
-    """
-    Muestra los gráficos dinámicos del dashboard usando Chart.js
-    Los datos se obtienen en vivo desde el endpoint /analytics/api/data/
-    """
+  #  graficos en vivo con chartjs desde mi endpoint  /analytics/api/data/
     return render(request, "analytics/graficos.html")
 
 @staff_member_required
 def analytics_horas(request):
-    """📊 Devuelve actividad por hora según el periodo seleccionado."""
+    
     periodo = request.GET.get("periodo", "historico")
     hoy = now().date()
 
@@ -247,7 +240,7 @@ def analytics_horas(request):
         logs = UserActionLog.objects.filter(timestamp__date__gte=hoy - timedelta(days=7))
     elif periodo == "mensual":
         logs = UserActionLog.objects.filter(timestamp__date__gte=hoy - timedelta(days=30))
-    else:  # histórico
+    else:  # histrico
         logs = UserActionLog.objects.all()
 
     horas = (

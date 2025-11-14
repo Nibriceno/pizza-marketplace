@@ -11,20 +11,19 @@ from .forms import CheckoutForm
 from order.utilities import checkout, notify_customer, notify_vendor
 from botapi.models import TempCart
 from order.models import Order
-# 🧠 Importamos el logger de analytics
 from analytics.utils import log_event
 
-# 🛒 DETALLE DEL CARRITO
+# DETALLE DEL CARRITO
 @login_required
 def cart_detail(request):
     cart = Cart(request)
     try:
-        # 🧩 Acciones rápidas (agregar, eliminar, cambiar cantidad)
+        # Acciones rápidas (agregar, eliminar, cambiar cantidad)
         remove_from_cart = request.GET.get('remove_from_cart', '')
         change_quantity = request.GET.get('change_quantity', '')
         quantity = request.GET.get('quantity', 0)
         add_product = request.GET.get('add_product', '')
-
+        # LOGS PARA EL DASHBOARD
         if remove_from_cart:
             cart.remove(remove_from_cart)
             log_event(
@@ -79,7 +78,7 @@ def cart_detail(request):
                     "place": getattr(profile, "place", "") or "",
                 })
 
-        # 🧾 Checkout
+        # Checkout
         if request.method == "POST":
             form = CheckoutForm(request.POST)
             if form.is_valid():
@@ -105,7 +104,7 @@ def cart_detail(request):
                         )
                         return redirect("cart:cart")
 
-                    # ✅ Crear orden antes de ir a MP
+                    #  Crear orden antes de ir a MP
                     order = checkout(
                         request,
                         first_name=data["first_name"],
@@ -185,7 +184,7 @@ def cart_detail(request):
         else:
             form = CheckoutForm(initial=initial_data)
 
-        # 👀 Log de acceso al carrito
+        #Log de acceso al carrito
         log_event(
             request,
             action="👀 Entró al detalle del carrito",
@@ -207,7 +206,7 @@ def cart_detail(request):
         )
         raise
 
-# ✅ ÉXITO DE COMPRA
+#  ÉXITO DE COMPRA
 @login_required
 def success(request):
     cart = Cart(request)
@@ -217,19 +216,19 @@ def success(request):
     log_event(request, f"✅ Pago exitoso en orden #{order.id if order else 'desconocida'}", page="cart/success")
     return render(request, "cart/success.html", {"order": order})
 
-# ❌ PAGO FALLIDO
+# PAGO FALLIDO
 def failure(request):
     messages.error(request, "❌ El pago fue rechazado o cancelado.")
     log_event(request, "❌ Pago fallido o cancelado", status="error", page="cart/failure")
     return redirect("cart:cart")
 
-# ⏳ PAGO PENDIENTE
+#  PAGO PENDIENTE
 def pending(request):
     messages.info(request, "🕓 El pago está pendiente de confirmación.")
     log_event(request, "🕓 Pago pendiente de confirmación", page="cart/pending")
     return redirect("cart:cart")
 
-# 🧠 BOT: CARRITO TEMPORAL
+# BOT: CARRITO TEMPORAL
 @login_required
 def checkout_start(request):
     token = request.GET.get("cart_token")
@@ -338,7 +337,7 @@ def webhook(request):
             )
             return JsonResponse({"status": "ok"}, status=200)
 
-        # ✅ Marcar orden como pagada
+        #  Marcar orden como pagada
         order.paid_amount = data.get("transaction_amount", order.paid_amount)
         if hasattr(order, "paid"):
             order.paid = True
