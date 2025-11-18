@@ -1,0 +1,122 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Panel del Vendedor{% endblock %}
+
+{% block content %}
+
+<h1 class="title has-text-centered">
+    🍕 Panel del Vendedor – <span class="is-capitalized">{{ vendor.name }}</span>
+</h1>
+
+<!-- SALDOS -->
+<div class="box has-background-light">
+    <div class="columns is-multiline has-text-centered">
+        <div class="column is-6">
+            <p class="is-size-4"><strong>💵 Mi Saldo</strong></p>
+            <p class="is-size-3 has-text-success">${{ vendor.get_balance }}</p>
+        </div>
+        <div class="column is-6">
+            <p class="is-size-4"><strong>📬 Pagado</strong></p>
+            <p class="is-size-3 has-text-info">${{ vendor.get_paid_amount }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- MIS PRODUCTOS -->
+<div class="box">
+    <div class="level">
+        <h2 class="title is-4">🛒 Mis Productos</h2>
+        <a href="{% url 'vendor:add-product' %}" class="button is-primary">➕ Agregar Producto</a>
+    </div>
+
+    {% if products %}
+        <table class="table is-fullwidth is-striped is-hoverable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Título</th>
+                    <th>Precio</th>
+                    <th style="width: 140px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+
+                    <td>
+                        <a href="{% url 'product:product' product.category.slug product.slug %}">
+                            {{ product.title }}
+                        </a>
+                    </td>
+
+                    <td>${{ product.price }}</td>
+
+                    <td>
+                        <a href="{% url 'vendor:delete-product' product.pk %}" 
+                           class="button is-danger is-small" 
+                           onclick="return confirm('¿Eliminar este producto?');">
+                            🗑 Eliminar
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    {% else %}
+        <p class="has-text-grey">Aún no has agregado productos.</p>
+    {% endif %}
+</div>
+
+<!-- MIS PEDIDOS -->
+<div class="box">
+    <h2 class="title is-4">📦 Mis Pedidos</h2>
+
+    {% if orders %}
+        {% for order in orders %}
+            <div class="box {% if order.fully_paid %}has-background-success-light{% else %}has-background-info-light{% endif %}">
+                
+                <h3 class="is-size-5 mb-2">
+                    Pedido #{{ order.id }} – {{ order.first_name }} {{ order.last_name }}
+                </h3>
+
+                <p><strong>Dirección:</strong> {{ order.address }}</p>
+                <p><strong>Ciudad:</strong> {{ order.zipcode }} {{ order.place }}</p>
+                <p><strong>Correo:</strong> {{ order.email }}</p>
+                <p><strong>Teléfono:</strong> {{ order.phone }}</p>
+
+                <table class="table is-fullwidth mt-4">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Precio</th>
+                            <th>Cant.</th>
+                            <th>Pagado</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items.all %}
+                            {% if item.vendor == vendor %}
+                                <tr>
+                                    <td>{{ item.product.title }}</td>
+                                    <td>${{ item.product.price }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>{{ item.vendor_paid|yesno:"Sí,No" }}</td>
+                                    <td>${{ item.get_total_price }}</td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+            </div>
+        {% endfor %}
+
+    {% else %}
+        <p class="has-text-grey">No tienes pedidos todavía.</p>
+    {% endif %}
+</div>
+
+{% endblock %}

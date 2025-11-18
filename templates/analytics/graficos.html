@@ -57,9 +57,35 @@
       <p><strong>Porcentaje de eventos correctos:</strong> <span id="porcentajeCorrectos">0%</span></p>
     </div>
   </div>
+
+  <!-- 🌿 KPI Preferencias Alimentarias -->
+  <div class="kpi-section mt-5">
+    <h2 style="color:#0d9488; font-weight:700;">Preferencias Alimentarias</h2>
+
+    <div class="kpi-grid" style="display:flex; gap:2rem; justify-content:center; margin-bottom:2rem;">
+        <div class="kpi-card" style="background:#fff; padding:1.5rem; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); width:250px;">
+            <h3 style="font-size:1.1rem; font-weight:600;">Usuarios veganos este mes</h3>
+            <p id="kpi-veganos" class="kpi-value" style="font-size:2rem; margin-top:10px;">Cargando...</p>
+        </div>
+
+        <div class="kpi-card" style="background:#fff; padding:1.5rem; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); width:250px;">
+            <h3 style="font-size:1.1rem; font-weight:600;">Cambios de preferencias este mes</h3>
+            <p id="kpi-cambios" class="kpi-value" style="font-size:2rem; margin-top:10px;">Cargando...</p>
+        </div>
+    </div>
+
+    <h3 style="font-size:1.3rem; font-weight:600; margin-bottom:1rem;">Preferencias más activadas</h3>
+
+    <!-- 🔥 CONTENEDOR FIJO PARA EVITAR SCROLL INFINITO -->
+    <div style="height:300px; margin-bottom:2rem;">
+        <canvas id="chartTopPreferencias"></canvas>
+    </div>
+  </div>
+
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
 Chart.defaults.responsive = true;
 Chart.defaults.maintainAspectRatio = false;
@@ -86,6 +112,10 @@ const erroresChart = new Chart(document.getElementById('erroresChart'), {
   data: { labels: ['Errores', 'Correctos'], datasets: [{ data: [0, 0], backgroundColor: ['#ef4444', '#10b981'] }] },
   options: { animation: animOpts, plugins: { legend: { display: true, position: 'bottom' } } }
 });
+
+// ============================================================
+// 🔄 Lógica para actualizar los gráficos de logs
+// ============================================================
 
 async function actualizarDatos() {
   const rango = document.getElementById('rango').value;
@@ -115,7 +145,7 @@ async function actualizarDatos() {
   erroresChart.data.datasets[0].data = [errores, correctos];
   erroresChart.update();
 
-  // 📋 Actualizar info
+  // 📋 Actualizar info de errores
   const total = errores + correctos;
   document.getElementById('erroresTotal').textContent = errores;
   document.getElementById('correctosTotal').textContent = correctos;
@@ -127,5 +157,54 @@ actualizarDatos();
 document.getElementById('rango').addEventListener('change', actualizarDatos);
 document.getElementById('periodo').addEventListener('change', actualizarDatos);
 setInterval(actualizarDatos, 30000);
+
+// ============================================================
+// 🔥 KPI Preferencias Alimentarias
+// ============================================================
+
+let chartPreferencias = null;
+
+fetch("/analytics/preferences_kpis/")
+    .then(r => r.json())
+    .then(data => {
+
+        document.getElementById("kpi-veganos").innerText = data.veganos_mes;
+        document.getElementById("kpi-cambios").innerText = data.cambios_mes;
+
+        const nombres = data.ranking.map(item => item.preference__name);
+        const totales = data.ranking.map(item => item.total);
+
+        const ctx = document.getElementById("chartTopPreferencias").getContext("2d");
+
+        if (chartPreferencias) {
+            chartPreferencias.destroy();
+        }
+
+        chartPreferencias = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: nombres,
+                datasets: [{
+                    label: "Activaciones",
+                    data: totales,
+                    backgroundColor: "#0d9488",
+                    borderColor: "#0d9488",
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+    });
 </script>
 {% endblock %}

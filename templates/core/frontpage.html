@@ -38,11 +38,9 @@
 
       </div>
       {% endif %}
-
     </div>
   </div>
 </section>
-
 
 
 <!--PRODUCTOS RECIENTES -->
@@ -57,9 +55,24 @@
       <hr class="is-centered" style="width: 80px; border: 2px solid #ff914d;">
     </div>
 
+    <!-- 🧠 FILTRO DE PREFERENCIAS -->
+    {% if user.is_authenticated and user.profile.preferences.count > 0 %}
+    <div class="has-text-centered mb-5">
+      {% if solo_pref %}
+        <a href="?" class="button is-light is-rounded">
+          👀 Ver todas las pizzas
+        </a>
+        <p class="has-text-grey mt-2">Mostrando solo pizzas según tus preferencias 🍃</p>
+      {% else %}
+        <a href="?solo_pref=1" class="button is-success is-light is-rounded">
+          🌱 Ver solo mis preferencias
+        </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
     {% if newest_products %}
       <div class="columns is-multiline">
-
         {% for product in newest_products %}
         <div class="column is-3-desktop is-6-tablet">
           <div class="card product-card" style="border-radius: 16px; overflow: hidden;">
@@ -90,7 +103,6 @@
           </div>
         </div>
         {% endfor %}
-
       </div>
 
     {% elif selected_country %}
@@ -112,7 +124,6 @@
         <p class="has-text-grey">No hay productos disponibles por el momento 🍕</p>
       </div>
     {% endif %}
-
   </div>
 </section>
 

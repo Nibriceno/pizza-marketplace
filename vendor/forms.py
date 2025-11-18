@@ -13,14 +13,19 @@ from location.models import Region, Provincia, Comuna
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['title', 'category', 'description', 'price', 'image']
+        fields = ['title', 'category', 'description', 'price', 'image', 'preferences']
         labels = {
             'title': 'Nombre del producto',
             'category': 'Categoría',
             'description': 'Descripción',
             'price': 'Precio',
             'image': 'Imagen del producto',
+            'preferences': 'Preferencias del producto',
         }
+        widgets = {
+            'preferences': forms.CheckboxSelectMultiple()
+        }
+
 
 
 

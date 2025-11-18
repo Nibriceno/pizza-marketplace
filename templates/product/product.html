@@ -4,51 +4,99 @@
 
 {% block content %}
 
+<div class="columns is-centered">
+  <div class="column is-8">
+
+    <!-- 📸 Imagen -->
     {% if product.image %}
-        <figure class="image mb-6" style="max-width: 350px; height: auto; margin-bottom: 25px; text-align: left;">
-            <img src="{{ product.image.url }}" alt="{{ product.title }}" style="width: 100%; height: auto;">
-        </figure>
+      <figure class="image mb-5" style="max-width: 420px;">
+        <img src="{{ product.image.url }}" alt="{{ product.title }}" style="border-radius: 12px;">
+      </figure>
     {% endif %}
 
-    <!--Aquí cambiamos el precio para mostrar la moneda dinámica -->
-    <h1 class="title">
-        {{ product.title }}, {{ currency_symbol }}{{ product.price }} 
-        <span style="font-size: 0.9em; color: #777;">{{ currency_code }}</span>
-    </h1>
+    <!-- 🧀 Detalles -->
+    <h1 class="title mb-2">{{ product.title }}</h1>
 
-    <p class="mb-6">
-        <span class="tag is-dark">{{ product.vendor.name }}</span>
+    <p class="is-size-5 has-text-weight-semibold mb-3">
+      {{ currency_symbol }}{{ product.price }} 
+      <span class="is-size-6 has-text-grey ml-1">{{ currency_code }}</span>
     </p>
 
-    <p>{{ product.description }}</p>
+    <p class="mb-3">
+      <span class="tag is-dark">{{ product.vendor.name }}</span>
+      {% if product.preferences.all %}
+        {% for pref in product.preferences.all %}
+          <span class="tag is-success is-light ml-1">
+            {% if pref.name|lower == "vegana" %}
+              🌱 {{ pref.name }}
+            {% elif pref.name|lower == "sin gluten" %}
+              🌾 {{ pref.name }}
+            {% else %}
+              🍕 {{ pref.name }}
+            {% endif %}
+          </span>
+        {% endfor %}
+      {% endif %}
+    </p>
+
+    <p class="mb-5">{{ product.description }}</p>
 
     <hr>
 
-
-
-    <form method="post" action="">
-        {% csrf_token %}
-        <div class="field has-addons">
-            <div class="control">
-                <input type="number" name="quantity" value="1" class="input" min="1">
-            </div>
-            <div class="control">
-                <button class="button is-dark is-uppercase">Agregar al Carrito</button>
-            </div>
+    <!-- 🛒 Agregar al carrito -->
+    <form method="post">
+      {% csrf_token %}
+      <div class="field has-addons">
+        <div class="control">
+          <input type="number" name="quantity" value="1" class="input" min="1">
         </div>
+        <div class="control">
+          <button class="button is-dark is-uppercase">
+            Agregar al carrito 🛒
+          </button>
+        </div>
+      </div>
     </form>
 
-    {% if similar_products %}
-        <hr>
-        <div class="columns is-multiline">
-            <div class="column is-12">
-                <h2 class="subtitle">Productos Similares</h2>
-            </div>
+    <hr>
 
-            {% for product in similar_products %}
-                {% include 'product/parts/list_item.html' %}
-            {% endfor %}
+    <!-- 🧩 Productos Similares -->
+    {% if similar_products %}
+      <div class="mt-6">
+        <h2 class="subtitle mb-4">Productos Similares 🍕</h2>
+        <div class="columns is-multiline">
+          {% for product in similar_products %}
+            {% include 'product/parts/list_item.html' %}
+          {% endfor %}
         </div>
+      </div>
     {% endif %}
 
+    <!-- 💚 Recomendaciones según tus preferencias -->
+    {% if recommended_products %}
+      <div class="mt-6">
+        <h2 class="subtitle mb-4">Recomendaciones para ti 💚</h2>
+        <div class="columns is-multiline">
+          {% for rec in recommended_products %}
+            {% include 'product/parts/list_item.html' with product=rec %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- ✨ Estilos -->
+<style>
+  .tag.is-success.is-light {
+    font-size: .9rem;
+    border-radius: 10px;
+  }
+  .button.is-dark:hover {
+    background-color: #222;
+  }
+</style>
+
 {% endblock content %}
+

@@ -2,6 +2,7 @@
 from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
+from .views import profile_view, select_preferences, edit_preferences
 
 
 app_name = 'vendor'
@@ -21,4 +22,9 @@ urlpatterns = [
   #  path('logout/', auth_views.LogoutView.as_view(), name="logout"),
     # path('login/', auth_views.LoginView.as_view(template_name='vendor/login.html'), name="login"),
     path('<int:vendor_id>/', views.vendor, name="vendor"),
+
+    path("profile/", profile_view, name="profile"),
+    path("select-preferences/", select_preferences, name="select-preferences"),
+    path("edit-preferences/", edit_preferences, name="edit-preferences"),
+    
 ]

@@ -1,11 +1,24 @@
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models.fields.related import OneToOneField
 from phonenumber_field.modelfields import PhoneNumberField
-from core.models import Country 
+
+from core.models import Country
 from location.models import Region, Provincia, Comuna
 
-# Create your models here.
+
+
+class Preference(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    slug = models.SlugField(unique=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Preferencia"
+        verbose_name_plural = "Preferencias"
+        ordering = ['name']
+
 
 class Vendor(models.Model):
     name = models.CharField(max_length=255)
@@ -47,6 +60,9 @@ class Profile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Preferencias alimentarias (vegano / sin gluten / más a futuro)
+    preferences = models.ManyToManyField(Preference, blank=True)
+
     def __str__(self):
         return self.user.username
 
@@ -54,3 +70,24 @@ class Profile(models.Model):
         verbose_name = "Perfil"
         verbose_name_plural = "Perfiles"
         ordering = ['user__username']
+
+
+class UserPreference(models.Model):
+    ACTIONS = (
+        ('add', 'add'),
+        ('remove', 'remove'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    preference = models.ForeignKey(Preference, on_delete=models.CASCADE)
+    action = models.CharField(max_length=10, choices=ACTIONS)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Preferencia del Usuario"
+        verbose_name_plural = "Preferencias del Usuario"
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.preference.name} - {self.action}"
+

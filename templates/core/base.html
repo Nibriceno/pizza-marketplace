@@ -108,7 +108,15 @@
                 </a>
 
                 <div class="navbar-dropdown is-right">
-                    <a class="navbar-item" href="{% url 'vendor:vendor-admin' %}">Perfil</a>
+
+                    <!-- PERFIL UNIFICADO -->
+                    <a class="navbar-item" href="{% url 'vendor:profile' %}">
+                        {% if user.vendor %}
+                            Perfil de Vendedor
+                        {% else %}
+                            Mi Perfil
+                        {% endif %}
+                    </a>
 
                     {% if user.vendor %}
                         <a class="navbar-item" href="{% url 'vendor:edit-vendor' %}">Actualizar Perfil</a>

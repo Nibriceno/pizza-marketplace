@@ -15,13 +15,14 @@ from product.views import get_active_comuna
 
 
 
+
 # PAGINA PRINCIPALL
+
+from product.utils import aplicar_preferencias
 
 def frontpage(request):
     countries = Country.objects.all()
     selected_country = request.GET.get('country')
-
-    # Guardar país seleccionado en sesión
     if selected_country:
         request.session['selected_country'] = selected_country
     else:
@@ -29,7 +30,6 @@ def frontpage(request):
 
     newest_products = Product.objects.all().order_by('-id')
 
-    # Usuario NO logueado → usar país seleccionado
     if not request.user.is_authenticated:
         if selected_country:
             try:
@@ -42,7 +42,6 @@ def frontpage(request):
         else:
             newest_products = []
     else:
-        # Usuario logueado  usar país del perfil
         profile = getattr(request.user, "profile", None)
         if profile and profile.country:
             user_country = profile.country
@@ -52,19 +51,24 @@ def frontpage(request):
             selected_country = user_country.id
             request.session['selected_country'] = user_country.id
 
-    # Filtro por comuna activa
     comuna_activa = get_active_comuna(request)
     if comuna_activa:
         newest_products = newest_products.filter(
             vendor__created_by__profile__comuna__nombre__iexact=comuna_activa
         )
 
+    # ⭐ Aquí agregas la línea que faltaba
+    solo_pref = request.GET.get("solo_pref") == "1"
+    newest_products = aplicar_preferencias(request.user, newest_products, solo_pref)
+
     return render(request, "core/frontpage.html", {
         "countries": countries,
         "selected_country": selected_country,
         "newest_products": newest_products[:12],
         "comuna": comuna_activa,
+        "solo_pref": solo_pref,
     })
+
 
 
 #CONTACTO
@@ -233,3 +237,6 @@ def limpiar_carrito_por_comuna(request, nueva_comuna):
 
     messages.warning(request, mensaje)
     return mensaje
+
+
+

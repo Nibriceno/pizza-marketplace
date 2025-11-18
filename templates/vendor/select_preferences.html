@@ -1,0 +1,157 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Selecciona tus preferencias{% endblock %}
+
+{% block content %}
+
+<div class="container" style="max-width: 700px; margin-top: 60px; margin-bottom: 50px;">
+    
+    <div class="card" style="
+        padding: 35px;
+        border-radius: 14px;
+        box-shadow: 0px 6px 16px rgba(0,0,0,0.08);
+    ">
+        
+        <h2 class="has-text-centered mb-2" style="font-size: 1.8rem; font-weight: 700;">
+            🍕 Personaliza tu experiencia
+        </h2>
+
+        <p class="has-text-centered mb-5" style="font-size: 1.15rem; color: #555;">
+            Cuéntanos tus preferencias alimentarias para recomendarte pizzas perfectas para ti.
+        </p>
+
+        <!-- 🔥 ESTILOS DE LOS CHIPS -->
+        <style>
+            .pref-grid {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 1rem;
+                margin-top: 1.5rem;
+                justify-content: center;
+
+            }
+
+            .pref-chip {
+                position: relative;
+                padding: .8rem 1.3rem .8rem 2.3rem;
+                border-radius: 9999px;
+                cursor: pointer;
+                font-size: 1.05rem;
+                background: #eef2f7;
+                color: #111;
+                border: 2px solid transparent;
+
+                display: inline-flex;
+                align-items: center;
+                gap: .4rem;
+
+                transition: transform .12s ease, box-shadow .12s ease, 
+                            background .12s ease, border-color .12s ease;
+                user-select: none;
+                outline: none;
+            }
+
+            .pref-chip[data-selected="true"] {
+                background: #0d9488;
+                color: #fff;
+                border-color: #0b7669;
+                transform: translateY(-1px) scale(1.03);
+                box-shadow: 0 6px 12px rgba(0,0,0,.15);
+            }
+
+            .pref-chip .check {
+                position: absolute;
+                left: .7rem;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 1.3rem;
+                height: 1.3rem;
+                border-radius: 9999px;
+                background: #cbd5e1;
+                color: #111;
+                font-size: .85rem;
+                display: grid;
+                place-items: center;
+                transition: background .12s ease, color .12s ease;
+            }
+
+            .pref-chip[data-selected="true"] .check {
+                background: #0b7669;
+                color: #fff;
+            }
+
+            .pref-hidden {
+                display: none;
+            }
+        </style>
+
+        <form method="POST" id="prefForm">
+            {% csrf_token %}
+
+            <div class="pref-grid">
+
+                {% for pref in preferences %}
+
+                    <label class="pref-chip"
+                        tabindex="0"
+                        data-selected="false"
+                        aria-pressed="false">
+
+                        <span class="check">✓</span>
+
+                        {% if pref.name|lower == "vegana" %}
+                            🌱 {{ pref.name }}
+                        {% elif pref.name|lower == "sin gluten" %}
+                            🌾 {{ pref.name }}
+                        {% else %}
+                            🍕 {{ pref.name }}
+                        {% endif %}
+
+                        <input type="checkbox" class="pref-hidden" name="preferences" value="{{ pref.id }}">
+                    </label>
+
+                {% endfor %}
+
+            </div>
+
+            <div class="has-text-centered mt-5" style="display:flex; flex-direction:column; gap:10px;">
+                <button class="button is-primary is-medium" style="width: 70%; margin: 0 auto;" type="submit">
+                    Guardar preferencias
+                </button>
+
+                <a href="{% url 'core:home' %}" class="button is-light" style="width:60%; margin:0 auto;">
+                    Saltar por ahora
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<script>
+(function() {
+    const chips = [...document.querySelectorAll('.pref-chip')];
+
+    chips.forEach(chip => {
+        chip.addEventListener('click', () => toggleChip(chip));
+        chip.addEventListener('keydown', e => {
+            if (e.key === " " || e.key === "Enter") {
+                e.preventDefault();
+                toggleChip(chip);
+            }
+        });
+    });
+
+    function toggleChip(chip) {
+        const input = chip.querySelector('input.pref-hidden');
+        const selected = input.checked = !input.checked;
+
+        chip.dataset.selected = String(selected);
+        chip.setAttribute('aria-pressed', String(selected));
+    }
+})();
+</script>
+
+{% endblock %}

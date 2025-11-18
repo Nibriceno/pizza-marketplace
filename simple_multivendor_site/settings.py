@@ -33,14 +33,15 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'core',
-    'vendor',
     'product',
     'cart',
     'order',
     'widget_tweaks',
     'location',
     'botapi',  
-    'analytics', 
+    'analytics',
+    'vendor.apps.VendorConfig',
+    'django_extensions',
 ]
 
 # 🧱 Middleware

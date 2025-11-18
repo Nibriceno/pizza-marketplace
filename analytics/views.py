@@ -10,6 +10,8 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import UserActionLog
 from .utils import classify_section
 from vendor.models import Profile
+from vendor.models import UserPreference, Preference
+from django.utils.timezone import now
 
 
 
@@ -255,3 +257,51 @@ def analytics_horas(request):
         "values": [h["total"] for h in horas],
     }
     return JsonResponse(data)
+
+
+def preferences_kpis(request):
+    """
+    📊 KPI de preferencias alimentarias
+    - Usuarios que activaron 'vegano' este mes
+    - Ranking de preferencias (add)
+    - Total de cambios de preferencias del mes
+    """
+
+    today = now()
+    month = today.month
+    year = today.year
+
+    #  Intentar obtener la preferencia "vegana"
+    pref_vegano = Preference.objects.filter(slug="vegana").first()
+
+    # Si existe, contar usuarios veganos este mes
+    veganos_mes = 0
+    if pref_vegano:
+        veganos_mes = UserPreference.objects.filter(
+            preference=pref_vegano,
+            action="add",
+            timestamp__year=year,
+            timestamp__month=month,
+        ).count()
+
+    # Ranking de preferencias activadas (action="add")
+    ranking = list(
+        UserPreference.objects.filter(action="add")
+        .values("preference__name")
+        .annotate(total=Count("id"))
+        .order_by("-total")[:5]
+    )
+
+    # Total cambios del mes (add + remove)
+    cambios_mes = UserPreference.objects.filter(
+        timestamp__year=year,
+        timestamp__month=month,
+    ).count()
+
+    return JsonResponse({
+        "veganos_mes": veganos_mes,
+        "ranking": ranking,
+        "cambios_mes": cambios_mes,
+    })
+
+

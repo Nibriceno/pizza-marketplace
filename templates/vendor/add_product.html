@@ -13,8 +13,11 @@
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
 
-                    <!--  Campos del formulario -->
+                    <!-- ========================== -->
+                    <!--   CAMPOS NORMALES DEL FORM -->
+                    <!-- ========================== -->
                     {% for field in form %}
+                        {% if field.name != "preferences" %}
                         <div class="field">
                             <label class="label">{{ field.label }}</label>
                             <div class="control">
@@ -28,30 +31,118 @@
                                     {{ field|add_class:"input" }}
                                 {% endif %}
                             </div>
+
                             {% if field.errors %}
                                 <p class="help is-danger">{{ field.errors|join:", " }}</p>
                             {% endif %}
                         </div>
+                        {% endif %}
                     {% endfor %}
 
-                    <!-- 🖱️ Botones -->
-                                <div class="field mt-5">
-                                    <div class="columns is-variable is-2 is-mobile is-centered is-multiline">
-                                        <div class="column is-full-mobile is-half-tablet is-one-third-desktop">
-                                            <button class="button is-primary is-uppercase is-medium is-fullwidth">
-                                                <span class="icon">
-                                                    <i class="fas fa-plus"></i>
-                                                </span>
-                                                <span>Agregar producto</span>
-                                            </button>
-                                        </div>
-                                        <div class="column is-full-mobile is-half-tablet is-one-third-desktop">
-                                            <a href="{% url 'vendor:vendor-admin' %}" class="button is-light is-uppercase is-medium is-fullwidth">
-                                                Cancelar
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
+
+
+                    <style>
+                    .pref-grid {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: .8rem;
+                        margin-bottom: 1rem;
+                    }
+                    .pref-chip {
+                        position: relative;
+                        padding: .7rem 1.2rem .7rem 2.2rem;
+                        border-radius: 9999px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        background: #eef2f7;
+                        color: #111;
+                        border: 2px solid transparent;
+                        transition: .15s ease;
+                        user-select: none;
+                    }
+                    .pref-chip[data-selected="true"] {
+                        background: #0d9488;
+                        color: #fff;
+                        border-color: #0b7669;
+                        transform: translateY(-1px);
+                        box-shadow: 0 4px 10px rgba(0,0,0,.12);
+                    }
+                    .pref-chip .check {
+                        position: absolute; 
+                        left: .6rem; 
+                        top: 50%; 
+                        transform: translateY(-50%);
+                        width: 1.2rem; 
+                        height: 1.2rem; 
+                        border-radius: 9999px;
+                        display: grid; 
+                        place-items: center;
+                        background: #cbd5e1; 
+                        color: #111;
+                        font-size: .85rem;
+                        transition: .15s ease;
+                    }
+                    .pref-chip[data-selected="true"] .check {
+                        background: #0b7669;
+                        color: #fff;
+                    }
+                    .pref-hidden {
+                        display: none !important;
+                    }
+                    </style>
+
+                    <h2 class="subtitle mt-4">Preferencias del Producto</h2>
+
+                    <div class="pref-grid">
+                        {% for pref in form.preferences.field.queryset %}
+                            <label 
+                                class="pref-chip"
+                                data-selected="{% if pref in form.instance.preferences.all %}true{% else %}false{% endif %}"
+                            >
+                                <span class="check">✓</span>
+
+                                {% if pref.name|lower == "vegana" %}
+                                    🌱 {{ pref.name }}
+                                {% elif pref.name|lower == "sin gluten" %}
+                                    🌾 {{ pref.name }}
+                                {% else %}
+                                    🍕 {{ pref.name }}
+                                {% endif %}
+
+                                <input 
+                                    type="checkbox"
+                                    class="pref-hidden"
+                                    name="preferences"
+                                    value="{{ pref.id }}"
+                                    {% if pref in form.instance.preferences.all %}checked{% endif %}
+                                >
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                    <!-- ===================== -->
+                    <!--    BOTONES DEL FORM   -->
+                    <!-- ===================== -->
+
+                    <div class="field mt-5">
+                        <div class="columns is-variable is-2 is-mobile is-centered is-multiline">
+                            <div class="column is-full-mobile is-half-tablet is-one-third-desktop">
+                                <button class="button is-primary is-uppercase is-medium is-fullwidth">
+                                    <span class="icon">
+                                        <i class="fas fa-plus"></i>
+                                    </span>
+                                    <span>Agregar producto</span>
+                                </button>
+                            </div>
+
+                            <div class="column is-full-mobile is-half-tablet is-one-third-desktop">
+                                <a href="{% url 'vendor:vendor-admin' %}" 
+                                   class="button is-light is-uppercase is-medium is-fullwidth">
+                                    Cancelar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
 
                 </form>
 
@@ -59,4 +150,25 @@
         </div>
     </div>
 </div>
+
+<!-- JS para interactividad -->
+<script>
+document.querySelectorAll(".pref-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+        const input = chip.querySelector("input.pref-hidden");
+        input.checked = !input.checked;
+        chip.dataset.selected = String(input.checked);
+    });
+
+    chip.addEventListener("keydown", e => {
+        if (e.key === " " || e.key === "Enter") {
+            e.preventDefault();
+            const input = chip.querySelector("input.pref-hidden");
+            input.checked = !input.checked;
+            chip.dataset.selected = String(input.checked);
+        }
+    });
+});
+</script>
+
 {% endblock content %}
