@@ -21,6 +21,8 @@ urlpatterns = [
     #  Ubicación del usuario
     # path("set-location/", core_views.set_location, name="set_location"),
     path("api/set-location-auto/", core_views.set_location_auto, name="set_location_auto"),
+    path("api/marketing/", include("marketing.urls")),
+
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

@@ -1,0 +1,48 @@
+{
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Obtener usuarios",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [300, 300],
+      "parameters": {
+        "url": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/api/marketing/email-list/",
+        "responseFormat": "json"
+      }
+    },
+    {
+      "id": "2",
+      "name": "Dividir usuarios",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [600, 300],
+      "parameters": {
+        "batchSize": 1
+      }
+    },
+    {
+      "id": "3",
+      "name": "Enviar Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "credentials": {
+        "smtp": {
+          "id": "cWKBcvsvGxel4DvP",
+          "name": "cuenta SMTP"
+        }
+      },
+      "parameters": {
+        "fromEmail": "nicolas.bricenocq@gmail.com",
+        "toEmail": "={{$json[\"email\"]}}",
+        "subject": "🍕 Nuevas promociones cerca de ti, {{$json[\"name\"]}}",
+        "html": "<!-- Aquí pegas el HTML completo -->"
+      }
+    }
+  ],
+  "connections": {
+    "Obtener usuarios": { "main": [ [ { "node": "Dividir usuarios", "type": "main", "index": 0 } ] ] },
+    "Dividir usuarios": { "main": [ [ { "node": "Enviar Email", "type": "main", "index": 0 } ], [ { "node": "Dividir usuarios", "type": "main", "index": 0 } ] ] }
+  }
+}

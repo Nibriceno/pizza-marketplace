@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'analytics',
     'vendor.apps.VendorConfig',
     'django_extensions',
+    'marketing',
 ]
 
 # 🧱 Middleware
