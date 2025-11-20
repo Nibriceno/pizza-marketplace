@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Pizzas disponibles</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body style="margin:0; padding:0; background:#f3f3f3; font-family: Arial, Helvetica, sans-serif;">
+
+    <table align="center" cellpadding="0" cellspacing="0" width="100%"
+           style="max-width:520px; margin:auto; background:white; border-radius:12px; overflow:hidden;">
+
+        <!-- Header -->
+        <tr>
+            <td style="background:#457b9d; padding:18px; text-align:center;">
+                <h1 style="color:#ffffff; margin:0; font-size:24px;">
+                    🍕 Descubre nuestras pizzas
+                </h1>
+            </td>
+        </tr>
+
+        <!-- Texto -->
+        <tr>
+            <td style="padding:20px;">
+                <p style="font-size:16px; color:#333; margin-bottom:10px;">
+                    Hola <strong>{{ user.first_name|default:user.username }}</strong>,  
+                    actualmente no tenemos ofertas activas en tu comuna,  
+                    pero puedes ver nuestro catálogo completo aquí:
+                </p>
+
+                <!-- Botón CTA -->
+                <div style="text-align:center; margin-top:20px;">
+                    <a href="{{ site_url }}"
+                       style="background:#1d3557; color:white; padding:14px 22px;
+                              text-decoration:none; font-size:16px; border-radius:8px;
+                              display:inline-block;">
+                        🔎 Ver todas las pizzas
+                    </a>
+                </div>
+
+                <p style="font-size:14px; color:#555; margin-top:20px;">
+                    Aprovecha las mejores pizzas disponibles, recién preparadas y listas para ti.
+                </p>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="padding:20px; text-align:center; font-size:13px; color:#888;">
+                Gracias por ser parte de nuestra comunidad 🍕.
+            </td>
+        </tr>
+
+    </table>
+
+</body>
+</html>
