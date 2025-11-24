@@ -13,98 +13,94 @@ from botapi.models import TempCart
 from order.models import Order
 from analytics.utils import log_event
 
-# DETALLE DEL CARRITO
+
+# ============================================================
+# 🛒 DETALLE DEL CARRITO (2x1 + OFERTAS OK)
+# ============================================================
 @login_required
 def cart_detail(request):
     cart = Cart(request)
+
     try:
-        # Acciones rápidas (agregar, eliminar, cambiar cantidad)
+        # 🔄 Acciones rápidas
         remove_from_cart = request.GET.get('remove_from_cart', '')
         change_quantity = request.GET.get('change_quantity', '')
         quantity = request.GET.get('quantity', 0)
         add_product = request.GET.get('add_product', '')
-        # LOGS PARA EL DASHBOARD
+
+        # 🗑 ELIMINAR
         if remove_from_cart:
             cart.remove(remove_from_cart)
-            log_event(
-                request,
-                action=f"❌ Eliminó producto {remove_from_cart} del carrito",
-                page="cart/remove",
-                extra_data={"product_id": remove_from_cart}
-            )
-            return redirect('cart:cart')
+            log_event(request, f"❌ Eliminó producto {remove_from_cart}",
+                      page="cart/remove",
+                      extra_data={"product_id": remove_from_cart})
+            return redirect("cart:cart")
 
+        # 🔄 CAMBIAR CANTIDAD
         if change_quantity:
             try:
                 quantity = int(quantity)
-            except ValueError:
+            except:
                 quantity = 1
-            if str(change_quantity) in cart.cart:
-                cart.add(change_quantity, quantity, update_quantity=False)
-            else:
-                cart.add(change_quantity, quantity, update_quantity=True)
-            log_event(
-                request,
-                action=f"🔄 Cambió cantidad del producto {change_quantity} a {quantity}",
-                page="cart/change",
-                extra_data={"product_id": change_quantity, "new_quantity": quantity}
-            )
-            return redirect('cart:cart')
 
+            cart.add(change_quantity, quantity, update_quantity=True)
+
+            log_event(request,
+                      f"🔄 Cambió cantidad de {change_quantity} a {quantity}",
+                      page="cart/change",
+                      extra_data={"product_id": change_quantity})
+            return redirect("cart:cart")
+
+        # ➕ AGREGAR
         if add_product:
             cart.add(add_product, 1)
-            log_event(
-                request,
-                action=f"🛒 Agregó producto {add_product} al carrito",
-                page="cart/add",
-                extra_data={"product_id": add_product, "quantity": 1}
-            )
-            return redirect('cart:cart')
+            log_event(request, f"🛒 Agregó producto {add_product}",
+                      page="cart/add",
+                      extra_data={"product_id": add_product})
+            return redirect("cart:cart")
 
-        # Datos iniciales del usuario
+        # ========================================================
+        # 📄 Datos iniciales para formulario
+        # ========================================================
         initial_data = {}
+
         if request.user.is_authenticated:
             initial_data = {
                 "first_name": request.user.first_name or "",
                 "last_name": request.user.last_name or "",
                 "email": request.user.email or "",
             }
+
             if hasattr(request.user, "profile"):
                 profile = request.user.profile
                 initial_data.update({
-                    "phone": getattr(profile, "phone", "") or "",
-                    "address": getattr(profile, "address", "") or "",
-                    "zipcode": getattr(profile, "zipcode", "") or "",
-                    "place": getattr(profile, "place", "") or "",
+                    "phone": profile.phone or "",
+                    "address": profile.address or "",
+                    "zipcode": profile.zipcode or "",
+                    "place": getattr(profile.comuna, "nombre", "") or "",
                 })
 
-        # Checkout
+        # ========================================================
+        # 💳 CHECKOUT / MERCADOPAGO
+        # ========================================================
         if request.method == "POST":
             form = CheckoutForm(request.POST)
+
             if form.is_valid():
                 try:
                     total = float(cart.get_total_cost())
                     data = form.cleaned_data
+
                     required_fields = [
-                        data["first_name"],
-                        data["last_name"],
-                        data["email"],
-                        data["phone"],
-                        data["address"],
-                        data["zipcode"],
-                        data["place"]
+                        data["first_name"], data["last_name"], data["email"],
+                        data["phone"], data["address"], data["zipcode"], data["place"]
                     ]
+
                     if any(f.strip() == "" for f in required_fields):
-                        messages.error(request, "Por favor completa todos los campos antes de continuar.")
-                        log_event(
-                            request,
-                            action="Formulario incompleto en checkout",
-                            page="cart/checkout",
-                            extra_data={"form_data": data},
-                        )
+                        messages.error(request, "Completa todos los campos.")
                         return redirect("cart:cart")
 
-                    #  Crear orden antes de ir a MP
+                    # Crear orden
                     order = checkout(
                         request,
                         first_name=data["first_name"],
@@ -117,77 +113,82 @@ def cart_detail(request):
                         amount=total,
                         send_email=False,
                     )
+
                     log_event(
                         request,
-                        action=f"💳 Inició proceso de pago para orden #{order.id}",
+                        f"💳 Inició pago (orden #{order.id})",
                         page="cart/checkout",
-                        extra_data={"order_id": order.id, "monto_total": total}
+                        extra_data={"order_id": order.id, "total": total}
                     )
 
+                    # =============== MERCADO PAGO SDK =================
                     mp = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+
+                    # 🔥 FIX 2x1 AQUÍ: usamos effective_qty y unit_price real
                     preference_data = {
                         "items": [
                             {
                                 "title": item["product"].title,
-                                "quantity": item["quantity"],
-                                "unit_price": float(item["product"].price),
+
+                                # CANTIDAD REAL COBRADA CON 2x1
+                                "quantity": item["effective_qty"],
+
+                                # PRECIO UNITARIO REAL
+                                "unit_price": float(item["unit_price"]),
+
                                 "currency_id": "CLP",
+                                "description": f"{item['quantity']} unidades (paga {item['effective_qty']})"
                             }
                             for item in cart
                         ],
+
                         "payer": {
                             "name": data["first_name"],
                             "surname": data["last_name"],
                             "email": data["email"],
                         },
+
                         "back_urls": {
-                            "success": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/success/",
-                            "failure": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/failure/",
-                            "pending": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/pending/",
+                            "success": f"{settings.SITE_URL}/cart/success/",
+                            "failure": f"{settings.SITE_URL}/cart/failure/",
+                            "pending": f"{settings.SITE_URL}/cart/pending/",
                         },
-                        "auto_return": "approved",
+
                         "binary_mode": True,
-                        "notification_url": "https://nonfimbriate-usha-aerobically.ngrok-free.dev/cart/webhook/",
+                        "notification_url": f"{settings.SITE_URL}/cart/webhook/",
                         "external_reference": str(order.id),
                     }
+
+                    print("🔧 SITE_URL:", settings.SITE_URL)
+                    print("📦 PAYLOAD MP:", json.dumps(preference_data, indent=4))
+
                     result = mp.preference().create(preference_data)
-                    init_point = result.get("response", {}).get("init_point")
+                    print("🟪 MP RAW RESPONSE:", json.dumps(result, indent=4))
+
+                    response = result.get("response", {})
+                    init_point = response.get("init_point")
+
                     if not init_point:
-                        messages.error(request, "No se pudo generar el enlace de pago.")
-                        log_event(
-                            request,
-                            action="Error al generar init_point de Mercado Pago",
-                            page="cart/checkout",
-                            extra_data={"order_id": order.id, "total": total},
-                        )
+                        print("❌ ERROR MP:", response)
+                        messages.error(request, "Error creando el enlace de pago.")
                         return redirect("cart:cart")
 
                     return redirect(init_point)
+
                 except Exception as e:
-                    print("❌ Error al generar pago:", e)
-                    messages.error(request, f"Error al procesar el pago: {e}")
-                    log_event(
-                        request,
-                        action="Error en generación de pago",
-                        page="cart/checkout",
-                        extra_data={"error": str(e), "cart_total": cart.get_total_cost()},
-                    )
+                    print("Error checkout:", e)
+                    messages.error(request, f"Error: {e}")
                     return redirect("cart:cart")
+
             messages.error(request, "Formulario inválido.")
-            log_event(
-                request,
-                action="Formulario inválido en checkout",
-                page="cart/checkout",
-                extra_data={"raw_post_data": request.POST.dict()},
-            )
             return redirect("cart:cart")
+
         else:
             form = CheckoutForm(initial=initial_data)
 
-        #Log de acceso al carrito
         log_event(
             request,
-            action="👀 Entró al detalle del carrito",
+            "👀 Entró al carrito",
             page="cart/detail",
             extra_data={"total_items": len(cart), "total_cost": cart.get_total_cost()}
         )
@@ -197,12 +198,13 @@ def cart_detail(request):
             "cart": cart,
             "mp_public_key": settings.MERCADOPAGO_PUBLIC_KEY,
         })
+
     except Exception as e:
         log_event(
             request,
-            action="Error general en cart_detail",
+            "❌ Error general en cart_detail",
             page="cart/detail",
-            extra_data={"error": str(e)},
+            extra_data={"error": str(e)}
         )
         raise
 

@@ -26,5 +26,8 @@ urlpatterns = [
     path("profile/", profile_view, name="profile"),
     path("select-preferences/", select_preferences, name="select-preferences"),
     path("edit-preferences/", edit_preferences, name="edit-preferences"),
+
+    path("product/<int:product_id>/offer/", views.edit_offer, name="edit-offer"),
+
     
 ]

@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'vendor.apps.VendorConfig',
     'django_extensions',
     'marketing',
+    'offers',
 ]
 
 # 🧱 Middleware
@@ -74,6 +75,7 @@ TEMPLATES = [
                 'product.context_processors.menu_categories',
                 'cart.context_processors.cart',
                 'core.context_processors.comuna_context',
+                'core.context_processors.price_helpers'
             ],
         },
     },
@@ -97,12 +99,12 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# 🌍 Internacionalización
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Santiago'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
+
 
 # 📁 Archivos estáticos
 STATIC_URL = '/static/'
@@ -123,9 +125,7 @@ CART_SESSION_ID = 'cart'
 # MERCADOPAGO
 MERCADOPAGO_SANDBOX = True  # Cambia a False cuando vayas a producción
 
-# 💳 Stripe (desde .env)
-STRIPE_PUB_KEY = 'pk_test_OKdhbDNME5KHtnpzYRBfNmEZ00mjM6DVsJ'  # publica
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+
 
 # 📧 Email (ajústalo si usarás notificaciones)
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -143,3 +143,8 @@ MERCADOPAGO_WEBHOOK_SECRET = os.getenv('MERCADOPAGO_WEBHOOK_SECRET', '')
 
 # MANYCHAT SECRET (reemplaza esto con tu propio secreto de ManyChat)
 MANYCHAT_SECRET = "fh+##3lsl221#@$%$%^%$@"
+
+
+# 🌐 URL BASE DEL SITIO (OBLIGATORIA PARA MERCADO PAGO)
+SITE_URL = "https://nonfimbriate-usha-aerobically.ngrok-free.dev"
+

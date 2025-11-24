@@ -130,7 +130,7 @@ class CustomLoginView(LoginView):
         if user.is_staff or user.is_superuser:
             return reverse_lazy('core:admin_landing')
         elif hasattr(user, 'vendor'):
-            return reverse_lazy('vendor:vendor-admin')
+            return reverse_lazy('vendor:profile')
         else:
             return reverse_lazy('core:home')
 

@@ -77,22 +77,60 @@
         <div class="column is-3-desktop is-6-tablet">
           <div class="card product-card" style="border-radius: 16px; overflow: hidden;">
 
-            <div class="card-image">
+            <div class="card-image" style="position: relative;">
               <figure class="image is-4by3">
                 <img src="{{ product.get_thumbnail }}" alt="{{ product.title }}">
               </figure>
+
+              {% if product.active_offer %}
+                {% if product.active_offer.is_2x1 %}
+                  <span class="tag is-danger is-medium" 
+                        style="position:absolute; top:10px; left:10px;">
+                    🔥 2×1
+                  </span>
+                {% else %}
+                  <span class="tag is-danger is-medium" 
+                        style="position:absolute; top:10px; left:10px;">
+                    🔥 Oferta
+                  </span>
+                {% endif %}
+              {% endif %}
             </div>
 
             <div class="card-content has-text-centered">
               <h3 class="title is-5 mb-2">{{ product.title }}</h3>
 
-              <p class="is-size-6 has-text-weight-semibold">
-                {% if product.vendor.created_by.profile and product.vendor.created_by.profile.country %}
-                  {{ product.vendor.created_by.profile.country.currency_symbol }} {{ product.price }}
+              <!-- 🔥 PRECIOS -->
+              {% if product.active_offer %}
+
+                {% if product.active_offer.is_2x1 %}
+                  <p class="is-size-6 has-text-weight-semibold">
+                    <span class="has-text-grey-light" style="text-decoration: line-through;">
+                      {{ product.price }}
+                    </span>
+                    <br>
+                    <span class="has-text-danger has-text-weight-bold is-size-5">
+                      {{ product.get_final_price }} c/u (2×1)
+                    </span>
+                  </p>
+
                 {% else %}
-                  {{ product.price }}
+                  <p class="is-size-6 has-text-weight-semibold">
+                    <span class="has-text-grey-light" style="text-decoration: line-through;">
+                      {{ product.price }}
+                    </span>
+                    <br>
+                    <span class="has-text-danger has-text-weight-bold is-size-5">
+                      {{ product.get_final_price }}
+                    </span>
+                  </p>
                 {% endif %}
-              </p>
+
+              {% else %}
+                <p class="is-size-6 has-text-weight-semibold">
+                  {{ product.price }}
+                </p>
+              {% endif %}
 
               <a href="{% url 'product:product' product.category.slug product.slug %}"
                  class="button is-warning is-light is-small mt-3">
@@ -104,6 +142,7 @@
         </div>
         {% endfor %}
       </div>
+
 
     {% elif selected_country %}
       <div class="has-text-centered mt-6">
@@ -126,6 +165,9 @@
     {% endif %}
   </div>
 </section>
+
+
+
 
 
 <!-- 🎨 ESTILOS -->

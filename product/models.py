@@ -6,9 +6,6 @@ from vendor.models import Vendor, Preference
 from django.utils.text import slugify
 
 
-
-
-
 class Category(models.Model):
     title = models.CharField(max_length=50)
     slug = models.SlugField(max_length=55)
@@ -19,7 +16,6 @@ class Category(models.Model):
 
     def __str__(self):
         return self.title
-
 
 
 class Product(models.Model):
@@ -36,7 +32,7 @@ class Product(models.Model):
     image = models.ImageField(upload_to='uploads/', blank=True, null=True)
     thumbnail = models.ImageField(upload_to='uploads/', blank=True, null=True)
 
-    # 🟢 Preferencias alimentarias
+    # Preferencias alimentarias
     preferences = models.ManyToManyField(Preference, blank=True)
 
     class Meta:
@@ -45,16 +41,15 @@ class Product(models.Model):
     def __str__(self):
         return self.title
 
-    # ----------------------------
-    # 🔥 GENERACIÓN AUTOMÁTICA SLUG
-    # ----------------------------
+    # --------------------------------------------------------
+    # SLUG
+    # --------------------------------------------------------
     def save(self, *args, **kwargs):
         if not self.slug:
             base_slug = slugify(self.title)
             slug = base_slug
             num = 1
 
-            # Evita slug duplicados
             while Product.objects.filter(slug=slug).exists():
                 slug = f"{base_slug}-{num}"
                 num += 1
@@ -63,14 +58,14 @@ class Product(models.Model):
 
         super().save(*args, **kwargs)
 
-    # ----------------------------
-    # 📸 THUMBNAIL
-    # ----------------------------
+    # --------------------------------------------------------
+    # THUMBNAIL
+    # --------------------------------------------------------
     def get_thumbnail(self):
         if self.thumbnail:
             return self.thumbnail.url
 
-        elif self.image:
+        if self.image:
             self.thumbnail = self.make_thumbnail(self.image)
             self.save()
             return self.thumbnail.url
@@ -85,5 +80,65 @@ class Product(models.Model):
         thumb_io = BytesIO()
         img.save(thumb_io, "JPEG", quality=85)
 
-        thumbnail = File(thumb_io, name=image.name)
-        return thumbnail
+        return File(thumb_io, name=image.name)
+
+    # --------------------------------------------------------
+    # OFERTAS (se integra con Offer OneToOne)
+        # --------------------------------------------------------
+    @property
+    def active_offer(self):
+        """
+        Retorna la oferta activa si existe.
+        """
+        try:
+            offer = self.offer  # related_name="offer"
+            return offer if offer.is_current() else None
+        except:
+            return None
+
+    def has_active_offer(self):
+        """Retorna True si existe una oferta activa."""
+        return self.active_offer is not None
+
+    def get_final_price(self):
+        """
+        Precio final considerando:
+        - descuento fijo
+        - porcentaje
+        - precio normal
+        """
+        offer = self.active_offer
+        if not offer:
+            return self.price
+
+        # 🔥 PRECIO FIJO
+        if offer.discount_price:
+            return max(1, offer.discount_price)
+
+        # 🔥 DESCUENTO PORCENTUAL
+        if offer.discount_percentage:
+            final = int(self.price * (1 - offer.discount_percentage / 100))
+            return max(1, final)  # nunca permitir 0
+
+        # 🔥 NO HAY DESCUENTO ESPECÍFICO
+        return self.price
+
+    def get_offer_percentage(self):
+        """
+        Devuelve porcentaje real del descuento (solo si aplica).
+        """
+        offer = self.active_offer
+        if not offer:
+            return 0
+
+        original = self.price
+        final = self.get_final_price()
+
+        if original <= 0:
+            return 0
+
+        try:
+            pct = round(100 - ((final / original) * 100))
+            return max(1, min(pct, 90))
+        except:
+            return 0

@@ -11,3 +11,10 @@ def comuna_context(request):
     }
 
 
+def price_helpers(request):
+    return {
+        "final_price": lambda p: p.final_price,
+        "normal_price": lambda p: p.price,
+    }
+
+

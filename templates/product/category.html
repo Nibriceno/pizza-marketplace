@@ -11,19 +11,23 @@
     <h2 class="is-size-3">{{ category.title }}</h2>
   </div>
 
-  <!-- 🧠 FILTRO DE PREFERENCIAS SOLO SI EL USUARIO TIENE -->
+  <!-- 🌱 FILTRO DE PREFERENCIAS -->
   {% if user.is_authenticated and user.profile.preferences.count > 0 %}
     <div class="column is-12 has-text-centered mb-5">
+
       {% if solo_pref %}
         <a href="?" class="button is-light is-rounded">
           👀 Ver todas las pizzas
         </a>
-        <p class="has-text-grey mt-2">Mostrando solo pizzas según tus preferencias 🍃</p>
+        <p class="has-text-grey mt-2">
+          Mostrando solo pizzas según tus preferencias 🍃
+        </p>
       {% else %}
         <a href="?solo_pref=1" class="button is-success is-light is-rounded">
           🌱 Ver solo mis preferencias
         </a>
       {% endif %}
+
     </div>
   {% endif %}
 

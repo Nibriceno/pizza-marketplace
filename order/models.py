@@ -37,8 +37,18 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name="items", on_delete=models.CASCADE)
     product = models.ForeignKey(Product, related_name="items", on_delete=models.CASCADE)
     vendor = models.ForeignKey(Vendor, related_name="items", on_delete=models.CASCADE)
+
     vendor_paid = models.BooleanField(default=False)
+
+    #  PRECIO FINAL COBRADO (con oferta)
     price = models.IntegerField()
+
+    #  PRECIO NORMAL (sin descuento)
+    original_price = models.IntegerField(default=0)
+
+    #  % de descuento aplicado (si aplica)
+    discount_percentage = models.IntegerField(default=0)
+
     quantity = models.IntegerField(default=1)
 
     def __str__(self):

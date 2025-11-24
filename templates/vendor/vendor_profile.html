@@ -36,7 +36,8 @@
                     <th>#</th>
                     <th>Título</th>
                     <th>Precio</th>
-                    <th style="width: 140px;">Acciones</th>
+                    <th>Oferta</th>
+                    <th style="width: 160px;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -50,20 +51,46 @@
                         </a>
                     </td>
 
-                    <td>${{ product.price }}</td>
-
+                    <!-- PRECIO NORMAL + PRECIO FINAL -->
                     <td>
-                        <a href="{% url 'vendor:delete-product' product.pk %}" 
-                           class="button is-danger is-small" 
+                        {% if product.get_final_price != product.price %}
+                            <span style="text-decoration: line-through; color:#888;">
+                                ${{ product.price }}
+                            </span><br>
+                            <span class="has-text-danger has-text-weight-bold">
+                                ${{ product.get_final_price }}
+                            </span>
+                        {% else %}
+                            ${{ product.price }}
+                        {% endif %}
+                    </td>
+
+                    <!-- BADGE DE OFERTA -->
+                    <td>
+                        {% if product.active_offer %}
+                            <span class="tag is-success is-light">🔥 Oferta activa</span>
+                        {% else %}
+                            <span class="tag is-light">Sin oferta</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- ACCIONES -->
+                    <td class="is-flex is-flex-direction-column is-align-items-flex-start" style="gap: 6px;">
+                        <a href="{% url 'vendor:edit-offer' product.id %}"
+                           class="button is-info is-small">
+                           Editar Oferta
+                        </a>
+
+                        <a href="{% url 'vendor:delete-product' product.pk %}"
+                           class="button is-danger is-small"
                            onclick="return confirm('¿Eliminar este producto?');">
-                            🗑 Eliminar
+                           Eliminar
                         </a>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-
     {% else %}
         <p class="has-text-grey">Aún no has agregado productos.</p>
     {% endif %}
@@ -101,9 +128,26 @@
                             {% if item.vendor == vendor %}
                                 <tr>
                                     <td>{{ item.product.title }}</td>
-                                    <td>${{ item.product.price }}</td>
+
+                                    <!-- ⚡ PRECIO REAL (almacenado en OrderItem) -->
+                                    <td>
+                                        {% if item.original_price != item.price %}
+                                            <span style="text-decoration: line-through; color:#888;">
+                                                ${{ item.original_price }}
+                                            </span><br>
+                                            <span class="has-text-danger has-text-weight-bold">
+                                                ${{ item.price }}
+                                            </span>
+                                        {% else %}
+                                            ${{ item.price }}
+                                        {% endif %}
+                                    </td>
+
                                     <td>{{ item.quantity }}</td>
+
                                     <td>{{ item.vendor_paid|yesno:"Sí,No" }}</td>
+
+                                    <!-- TOTAL: price * quantity -->
                                     <td>${{ item.get_total_price }}</td>
                                 </tr>
                             {% endif %}
@@ -113,7 +157,6 @@
 
             </div>
         {% endfor %}
-
     {% else %}
         <p class="has-text-grey">No tienes pedidos todavía.</p>
     {% endif %}

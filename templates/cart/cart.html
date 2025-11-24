@@ -7,48 +7,132 @@
 
 {% if cart %}
     <div class="box mb-6">
-        <table class="table is-fullwidth is-striped">
+        <table class="table is-fullwidth is-striped is-hoverable">
             <thead>
                 <tr>
                     <th></th>
                     <th>Producto</th>
-                    <th>Cantidad</th>
+                    <th style="width: 160px;">Cantidad</th>
                     <th>Precio</th>
                     <th></th>
                 </tr>
             </thead>
+
             <tbody>
                 {% for item in cart %}
+                {% with p=item.product %}
                 <tr>
-                    <td><img src="{{ item.product.get_thumbnail }}" alt="{{ item.product.title }}" style="width:64px"></td>
-                    <td>{{ item.product.title }}</td>
+
+                    <!-- IMAGEN -->
                     <td>
-                        ${{ item.quantity }}
-                        <a href="?change_quantity={{ item.id }}&quantity=-1">-</a>
-                        <a href="?change_quantity={{ item.id }}&quantity=1">+</a>
+                        <img src="{{ p.get_thumbnail }}" 
+                             alt="{{ p.title }}" 
+                             style="width:64px; border-radius: 6px;">
                     </td>
-                    <td>${{ item.total_price }}</td>
+
+                    <!-- NOMBRE + ETIQUETA -->
                     <td>
-                        <a href="?remove_from_cart={{ item.id }}" class="delete">Eliminar</a>
+                        <strong>{{ p.title }}</strong><br>
+
+                        {% if item.is_two_for_one %}
+                            <span class="tag is-danger is-light mt-1">🔥 Oferta 2x1</span>
+                        {% elif p.active_offer %}
+                            <span class="tag is-warning is-light mt-1">🔥 Oferta</span>
+                        {% endif %}
                     </td>
+
+                    <!-- CANTIDAD -->
+                    <td>
+                        <div class="buttons has-addons">
+
+                            <!-- RESTAR -->
+                            <a class="button is-small" 
+                               href="?change_quantity={{ item.id }}&quantity={{ item.quantity|add:-1 }}">
+                               -
+                            </a>
+
+                            <!-- CANTIDAD DISPLAY -->
+                            <span class="button is-small is-static">
+                                {{ item.quantity }}
+                            </span>
+
+                            <!-- SUMAR -->
+                            <a class="button is-small" 
+                               href="?change_quantity={{ item.id }}&quantity={{ item.quantity|add:1 }}">
+                               +
+                            </a>
+
+                        </div>
+                    </td>
+
+                    <!-- PRECIO -->
+                    <td>
+
+                        {% if item.is_two_for_one %}
+                            <strong class="has-text-success">
+                                ${{ item.unit_price|floatformat:0 }} c/u
+                            </strong>
+                            <br>
+                            <small class="has-text-grey">
+                                Pagas {{ item.effective_qty }} de {{ item.quantity }}
+                            </small>
+
+                        {% elif p.active_offer %}
+                            <strong class="has-text-success">
+                                ${{ item.unit_price|floatformat:0 }}
+                            </strong>
+                            <br>
+                            <small class="has-text-grey" style="text-decoration: line-through;">
+                                ${{ p.price }}
+                            </small>
+
+                        {% else %}
+                            <strong>${{ item.unit_price|floatformat:0 }}</strong>
+                        {% endif %}
+
+                        <!-- TOTAL DEL ÍTEM -->
+                        <div class="mt-1">
+                            <small class="has-text-grey">
+                                Total ítem: ${{ item.total_price|floatformat:0 }}
+                            </small>
+                        </div>
+
+                    </td>
+
+                    <!-- ELIMINAR -->
+                    <td>
+                        <a href="?remove_from_cart={{ item.id }}" 
+                           class="delete has-text-danger"></a>
+                    </td>
+
                 </tr>
+                {% endwith %}
                 {% endfor %}
             </tbody>
+
             <tfoot>
                 <tr>
                     <td></td>
                     <td><strong>Total</strong></td>
                     <td><strong>{{ cart|length }}</strong></td>
-                    <td colspan="2">${{ cart.get_total_cost }}</td>
+                    <td colspan="2">
+                        <strong class="has-text-primary">
+                            ${{ cart.get_total_cost|floatformat:0 }}
+                        </strong>
+                    </td>
                 </tr>
             </tfoot>
+
         </table>
     </div>
 
+    <!-- CHECKOUT -->
     <h2 class="subtitle">Información de contacto</h2>
-    <form method="post" action="">
+
+    <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
+
         <div class="field mt-5 has-text-centered">
             <button type="submit" class="button is-primary is-large is-fullwidth">
                 💳 Pagar con Mercado Pago
@@ -58,10 +142,12 @@
 
     {% if messages %}
         {% for message in messages %}
-            <div class="notification is-danger">{{ message }}</div>
+            <div class="notification is-danger mt-4">{{ message }}</div>
         {% endfor %}
     {% endif %}
+
 {% else %}
     <p>No tienes productos en tu carrito.</p>
 {% endif %}
+
 {% endblock content %}

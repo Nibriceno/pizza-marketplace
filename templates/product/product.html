@@ -14,29 +14,72 @@
       </figure>
     {% endif %}
 
-    <!-- 🧀 Detalles -->
+    <!-- 🧀 Título -->
     <h1 class="title mb-2">{{ product.title }}</h1>
 
+    <!-- 🔥 PRECIO -->
     <p class="is-size-5 has-text-weight-semibold mb-3">
-      {{ currency_symbol }}{{ product.price }} 
-      <span class="is-size-6 has-text-grey ml-1">{{ currency_code }}</span>
+
+      {% if product.active_offer %}
+
+        {% if product.active_offer.is_2x1 %}
+          <!-- 💥 OFERTA 2×1 -->
+          <span class="has-text-grey-light" style="text-decoration: line-through;">
+            {{ currency_symbol }}{{ product.price }}
+          </span>
+
+          <span class="has-text-danger ml-2">
+            {{ currency_symbol }}{{ product.get_final_price }} c/u
+          </span>
+
+          <span class="is-size-6 has-text-grey ml-1">{{ currency_code }}</span>
+
+          <span class="tag is-danger is-light ml-2">
+            🔥 2×1 activo
+          </span>
+
+          <p class="is-size-6 has-text-success mt-1">Llévate 2, paga 1 🍕</p>
+
+        {% else %}
+          <!-- 💸 OFERTA NORMAL -->
+          <span class="has-text-grey-light" style="text-decoration: line-through;">
+            {{ currency_symbol }}{{ product.price }}
+          </span>
+
+          <span class="has-text-danger ml-2">
+            {{ currency_symbol }}{{ product.get_final_price }}
+          </span>
+
+          <span class="is-size-6 has-text-grey ml-1">{{ currency_code }}</span>
+
+          <span class="tag is-danger is-light ml-2">
+            🔥 Oferta activa -{{ product.get_offer_percentage }}%
+          </span>
+        {% endif %}
+
+      {% else %}
+        <!-- Precio normal -->
+        {{ currency_symbol }}{{ product.price }}
+        <span class="is-size-6 has-text-grey ml-1">{{ currency_code }}</span>
+      {% endif %}
+
     </p>
 
+    <!-- 🏷 Vendedor + preferencias -->
     <p class="mb-3">
       <span class="tag is-dark">{{ product.vendor.name }}</span>
-      {% if product.preferences.all %}
-        {% for pref in product.preferences.all %}
-          <span class="tag is-success is-light ml-1">
-            {% if pref.name|lower == "vegana" %}
-              🌱 {{ pref.name }}
-            {% elif pref.name|lower == "sin gluten" %}
-              🌾 {{ pref.name }}
-            {% else %}
-              🍕 {{ pref.name }}
-            {% endif %}
-          </span>
-        {% endfor %}
-      {% endif %}
+
+      {% for pref in product.preferences.all %}
+        <span class="tag is-success is-light ml-1">
+          {% if pref.name|lower == "vegana" %}
+            🌱 {{ pref.name }}
+          {% elif pref.name|lower == "sin gluten" %}
+            🌾 {{ pref.name }}
+          {% else %}
+            🍕 {{ pref.name }}
+          {% endif %}
+        </span>
+      {% endfor %}
     </p>
 
     <p class="mb-5">{{ product.description }}</p>
@@ -72,7 +115,7 @@
       </div>
     {% endif %}
 
-    <!-- 💚 Recomendaciones según tus preferencias -->
+    <!-- 💚 Recomendaciones -->
     {% if recommended_products %}
       <div class="mt-6">
         <h2 class="subtitle mb-4">Recomendaciones para ti 💚</h2>
@@ -87,7 +130,6 @@
   </div>
 </div>
 
-<!-- ✨ Estilos -->
 <style>
   .tag.is-success.is-light {
     font-size: .9rem;
@@ -99,4 +141,3 @@
 </style>
 
 {% endblock content %}
-

@@ -8,6 +8,8 @@ from product.models import Product
 from .models import Preference
 from django.contrib import messages
 from order.models import  Order
+from offers.models import Offer
+from offers.forms import OfferForm
 
 
 
@@ -98,12 +100,10 @@ def register_vendor_view(request):
     return render(request, 'vendor/become_vendor.html', {'form': form})
 
 
-#Panel del vendedor
 @login_required
 def vendor_admin(request):
     context = {}
 
-    # Si es vendedor
     if hasattr(request.user, 'vendor'):
         vendor = request.user.vendor
         products = vendor.products.all()
@@ -116,10 +116,15 @@ def vendor_admin(request):
 
             for item in order.items.all():
                 if item.vendor == vendor:
+
+                    # 🔥 PRECIO FINAL CON OFERTA
+                    price = item.product.get_final_price()
+                    total_item = item.quantity * price
+
                     if item.vendor_paid:
-                        order.vendor_paid_amount += item.get_total_price()
+                        order.vendor_paid_amount += total_item
                     else:
-                        order.vendor_amount += item.get_total_price()
+                        order.vendor_amount += total_item
                         order.fully_paid = False
 
         context['is_vendor'] = True
@@ -127,7 +132,6 @@ def vendor_admin(request):
         context['products'] = products
         context['orders'] = orders
 
-    # Si es usuario normal
     else:
         context['is_vendor'] = False
         context['username'] = request.user.username
@@ -292,4 +296,39 @@ def edit_preferences(request):
     return render(request, "vendor/edit_preferences.html", {
         "preferences": preferences,
         "selected": profile.preferences.all()
+    })
+@login_required
+def edit_offer(request, product_id):
+    if not hasattr(request.user, "vendor"):
+        return redirect("core:home")
+
+    product = get_object_or_404(Product, id=product_id, vendor=request.user.vendor)
+
+    # Si el producto tiene oferta → editar
+    try:
+        offer = product.offer
+    except Offer.DoesNotExist:
+        offer = None
+
+    if request.method == "POST":
+        form = OfferForm(request.POST, instance=offer)
+
+        if form.is_valid():
+            new_offer = form.save(commit=False)
+            new_offer.product = product
+            new_offer.save()
+
+            messages.success(request, "Oferta actualizada correctamente 🎉")
+            return redirect("vendor:vendor-admin")
+
+        else:
+            print("FORM ERRORS:", form.errors)
+
+    else:
+        form = OfferForm(instance=offer)
+
+    return render(request, "vendor/edit_offer.html", {
+        "product": product,
+        "form": form,
+        "offer": offer,
     })

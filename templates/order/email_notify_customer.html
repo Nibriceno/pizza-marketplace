@@ -65,6 +65,19 @@
       color: #4CAF50;
       text-decoration: none;
     }
+    .old-price {
+      text-decoration: line-through;
+      color: #888;
+      font-size: 13px;
+    }
+    .discount-badge {
+      background: #ff5252;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-left: 4px;
+    }
   </style>
 </head>
 <body>
@@ -79,6 +92,7 @@
       <p>Tu orden ha sido recibida con éxito y ya está siendo procesada por nuestras tiendas 🍕.</p>
 
       <h3>🧾 Detalles del pedido:</h3>
+
       <table>
         <thead>
           <tr>
@@ -87,25 +101,51 @@
             <th>Precio</th>
           </tr>
         </thead>
+
         <tbody>
-          {% for item in order.items.all %}
+
+        {% for item in order.items.all %}
           <tr>
-            <td>{{ item.product.title }}</td>
+            <td>
+              <strong>{{ item.product.title }}</strong><br>
+
+              {% if item.discount_percentage > 0 %}
+                <span class="old-price">
+                  {{ item.original_price }} CLP
+                </span>
+                <span class="discount-badge">
+                  -{{ item.discount_percentage }}%
+                </span><br>
+                <span>{{ item.price }} CLP c/u</span>
+              
+              {% elif item.original_price > item.price %}
+                <span class="old-price">{{ item.original_price }} CLP</span><br>
+                <span>{{ item.price }} CLP c/u</span>
+
+              {% else %}
+                <span>{{ item.price }} CLP c/u</span>
+              {% endif %}
+            </td>
+
             <td>{{ item.quantity }}</td>
-            <td>{{ item.get_total_price|floatformat:0 }} CLP</td>
+
+            <td>{{ item.get_total_price }} CLP</td>
           </tr>
-          {% endfor %}
+        {% endfor %}
+
         </tbody>
       </table>
 
-      <p class="total">💰 Total pagado: <strong>{{ order.paid_amount|floatformat:0 }} CLP</strong></p>
+      <p class="total">
+        💰 Total pagado: <strong>{{ order.paid_amount|floatformat:0 }} CLP</strong>
+      </p>
 
       <h3>📍 Dirección de entrega:</h3>
       <p>{{ order.address }}, {{ order.place }} ({{ order.zipcode }})</p>
+
       <p><strong>Teléfono de contacto:</strong> {{ order.phone }}</p>
     </div>
 
-    
   </div>
 </body>
 </html>

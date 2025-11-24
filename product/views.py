@@ -1,7 +1,7 @@
 import random
 from django.contrib import messages
 from django.shortcuts import redirect, render, get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, BooleanField, ExpressionWrapper
 
 from product.models import Product
 from .models import Category
@@ -9,11 +9,15 @@ from .forms import AddToCartForm
 from cart.cart import Cart
 from core.models import Country
 
+from product.utils import aplicar_preferencias
 
 
-# FUNCION CENTRAL PARA OBTENER LA COMUNA ACTIVA
+# ===========================================================
+#   FUNCIÓN CENTRAL PARA OBTENER LA COMUNA ACTIVA
+# ===========================================================
 def get_active_comuna(request):
-    
+
+    # 1) Comuna temporal establecida en la homepage
     temp = request.session.get("temp_comuna")
     if temp:
         return temp
@@ -28,9 +32,9 @@ def get_active_comuna(request):
     return None
 
 
-# 
-#  PRODUCT DETAIL
-
+# ===========================================================
+#   PRODUCT DETAIL
+# ===========================================================
 def product(request, category_slug, product_slug):
     from analytics.utils import log_event
 
@@ -51,7 +55,7 @@ def product(request, category_slug, product_slug):
         messages.warning(request, f"🚫 Esta pizza no está disponible en tu comuna ({comuna_activa}).")
         return redirect("product:category", category_slug=category_slug)
 
-    # LOGS evitar duplicados
+    # LOG → evitar duplicados
     current_view = f"view_{product.id}"
     if request.method == "GET" and request.session.get("last_product_view") != current_view:
         log_event(
@@ -59,7 +63,7 @@ def product(request, category_slug, product_slug):
             action=f"👀 Vio producto '{product.title}'",
             page="product/detail",
             product_id=product.id,
-            extra_data={"precio": product.price}
+            extra_data={"precio_final": product.get_final_price()}
         )
         request.session["last_product_view"] = current_view
 
@@ -81,7 +85,10 @@ def product(request, category_slug, product_slug):
                 action=f"🖱️ Seleccionó producto '{product.title}' (x{quantity})",
                 page="product/detail",
                 product_id=product.id,
-                extra_data={"precio": product.price, "cantidad": quantity}
+                extra_data={
+                    "precio_final": product.get_final_price(),
+                    "cantidad": quantity
+                }
             )
 
             request.session["last_product_view"] = current_view
@@ -89,14 +96,16 @@ def product(request, category_slug, product_slug):
     else:
         form = AddToCartForm()
 
-    # SIMILARES filtrados por país / comuna
+    # SIMILARES filtrados por país y comuna
     similar = Product.objects.filter(category=product.category).exclude(id=product.id)
 
     if request.user.is_authenticated and hasattr(request.user, "profile") and request.user.profile.country:
         similar = similar.filter(vendor__country=request.user.profile.country)
 
     if comuna_activa:
-        similar = similar.filter(vendor__created_by__profile__comuna__nombre__iexact=comuna_activa)
+        similar = similar.filter(
+            vendor__created_by__profile__comuna__nombre__iexact=comuna_activa
+        )
 
     similar = list(similar)
     if len(similar) > 4:
@@ -111,10 +120,10 @@ def product(request, category_slug, product_slug):
         "comuna": comuna_activa,
     })
 
-# CATEGORY
 
-from product.utils import aplicar_preferencias
-
+# ===========================================================
+#   CATEGORY
+# ===========================================================
 def category(request, category_slug):
     from analytics.utils import log_event
 
@@ -137,17 +146,27 @@ def category(request, category_slug):
     # COMUNA
     comuna_activa = get_active_comuna(request)
     if comuna_activa:
-        products = products.filter(vendor__created_by__profile__comuna__nombre__iexact=comuna_activa)
+        products = products.filter(
+            vendor__created_by__profile__comuna__nombre__iexact=comuna_activa
+        )
 
-    # ⭐ FILTRO OPCIONAL / ORDEN POR PREFERENCIAS
+    # PREFERENCIAS
     solo_pref = request.GET.get("solo_pref") == "1"
     products = aplicar_preferencias(request.user, products, solo_pref)
+
+    # ORDENAR → primero las ofertas activas
+    products = products.annotate(
+        tiene_oferta=ExpressionWrapper(Q(offer__is_active=True), output_field=BooleanField())
+    ).order_by('-tiene_oferta', 'id')
 
     log_event(
         request,
         action=f"📂 Entró a la categoría '{categoria.title}'",
         page="product/category",
-        extra_data={"productos_disponibles": len(products)}
+        extra_data={
+            "productos_disponibles": products.count(),
+            "productos_en_oferta": products.filter(offer__is_active=True).count()
+        }
     )
 
     return render(request, "product/category.html", {
@@ -158,14 +177,14 @@ def category(request, category_slug):
     })
 
 
-
-
-from product.utils import aplicar_preferencias
-
+# ===========================================================
+#   SEARCH
+# ===========================================================
 def search(request):
     from analytics.utils import log_event
 
-    query = request.GET.get('query', '')
+    query = request.GET.get('query', '').strip()
+
     products = Product.objects.filter(
         Q(title__icontains=query) |
         Q(description__icontains=query)
@@ -178,18 +197,28 @@ def search(request):
     # COMUNA
     comuna_activa = get_active_comuna(request)
     if comuna_activa:
-        products = products.filter(vendor__created_by__profile__comuna__nombre__iexact=comuna_activa)
+        products = products.filter(
+            vendor__created_by__profile__comuna__nombre__iexact=comuna_activa
+        )
 
-    # ⭐ ORDEN POR PREFERENCIAS
+    # PREFERENCIAS
     solo_pref = request.GET.get("solo_pref") == "1"
     products = aplicar_preferencias(request.user, products, solo_pref)
 
-    if query.strip():
+    # ORDENAR → primero las ofertas activas
+    products = products.annotate(
+        tiene_oferta=ExpressionWrapper(Q(offer__is_active=True), output_field=BooleanField())
+    ).order_by('-tiene_oferta', 'id')
+
+    if query:
         log_event(
             request,
             action=f"🔍 Buscó '{query}'",
             page="product/search",
-            extra_data={"resultados": products.count()}
+            extra_data={
+                "resultados": products.count(),
+                "con_oferta": products.filter(offer__is_active=True).count()
+            }
         )
 
     return render(request, "product/search.html", {
@@ -198,6 +227,3 @@ def search(request):
         "comuna": comuna_activa,
         "solo_pref": solo_pref,
     })
-
-
-
