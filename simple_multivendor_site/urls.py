@@ -18,6 +18,8 @@ urlpatterns = [
     path('order/', include('order.urls')),
     path('product/', include('product.urls')),
     path('logout/', auth_views.LogoutView.as_view(next_page='core:home'), name='logout'),
+    path("assistant/", include("assistant.urls")),
+
     #  Ubicación del usuario
     # path("set-location/", core_views.set_location, name="set_location"),
     path("api/set-location-auto/", core_views.set_location_auto, name="set_location_auto"),

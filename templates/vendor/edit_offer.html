@@ -28,36 +28,44 @@
                 {% endif %}
             </div>
 
-
             <form method="post">
                 {% csrf_token %}
 
-                <!-- Campos del form -->
                 {% for field in form %}
-                <div class="field mt-4">
-                    <label class="label">{{ field.label }}</label>
+                    <div class="field mt-4">
 
-                    <div class="control">
+                        {% if field.name == "discount_percentage" %}
+                            <label class="label">Porcentaje de descuento</label>
+                            {{ field|add_class:"input" }}
 
-                        {% if field.field.widget.input_type == "datetime-local" %}
+                        {% elif field.name == "discount_price" %}
+                            <label class="label">Precio con descuento</label>
                             {{ field|add_class:"input" }}
 
                         {% elif field.name == "is_2x1" %}
-                            <label class="checkbox">{{ field }} 2x1</label>
+                            <label class="checkbox">{{ field }} Oferta 2x1</label>
+
+                        {% elif field.name == "start_date" %}
+                            <label class="label">Fecha de inicio</label>
+                            {{ field|add_class:"input" }}
+
+                        {% elif field.name == "end_date" %}
+                            <label class="label">Fecha de término</label>
+                            {{ field|add_class:"input" }}
 
                         {% elif field.name == "is_active" %}
                             <label class="checkbox">{{ field }} Activar oferta</label>
 
                         {% else %}
+                            <label class="label">{{ field.label }}</label>
                             {{ field|add_class:"input" }}
                         {% endif %}
 
-                    </div>
+                        {% if field.errors %}
+                            <p class="help is-danger">{{ field.errors }}</p>
+                        {% endif %}
 
-                    {% if field.errors %}
-                        <p class="help is-danger">{{ field.errors }}</p>
-                    {% endif %}
-                </div>
+                    </div>
                 {% endfor %}
 
                 <!-- Preview -->
@@ -78,7 +86,7 @@
                     </button>
                 </div>
 
-                <a href="{% url 'vendor:vendor-admin' %}" class="button is-light is-fullwidth mt-2">
+                <a href="{% url 'vendor:profile' %}" class="button is-light is-fullwidth mt-2">
                     Volver
                 </a>
 
@@ -101,31 +109,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const startInput = document.getElementById("id_start_date");
     const endInput = document.getElementById("id_end_date");
 
-    // 🔥 Precio base del producto
     const basePrice = parseInt('{{ product.price }}');
 
-    /* ============================================
-       1) FECHAS — PERMITIR HOY COMPLETO
-       ============================================ */
-
-    // 👉 Hoy a las 00:00, así no bloqueamos el día actual
     function todayMinDatetime() {
         const now = new Date();
-        now.setHours(0, 0, 0, 0);    // día actual completo permitido
+        now.setHours(0, 0, 0, 0);
         return now.toISOString().slice(0, 16);
     }
 
     const todayMin = todayMinDatetime();
-
     if (startInput) startInput.min = todayMin;
     if (endInput) endInput.min = todayMin;
 
-    // Cuando se cambia start_date → end_date debe ser mayor
     function updateEndDateMin() {
         if (!startInput || !endInput || !startInput.value) return;
 
         const d = new Date(startInput.value);
-        const minEnd = new Date(d.getTime() + 60000);   // +1 minuto obligatorio
+        const minEnd = new Date(d.getTime() + 60000);
         endInput.min = minEnd.toISOString().slice(0, 16);
     }
 
@@ -134,9 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
         updateEndDateMin();
     }
 
-    /* ============================================
-       2) PREVIEW DINÁMICO
-       ============================================ */
     function updatePreview() {
         if (!preview) return;
 
@@ -153,9 +150,6 @@ document.addEventListener("DOMContentLoaded", () => {
             : "$" + final.toLocaleString();
     }
 
-    /* ============================================
-       3) LÓGICA DEL 2x1
-       ============================================ */
     function disableDiscounts() {
         if (discountPercentage) {
             discountPercentage.value = "";
@@ -181,9 +175,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    /* ============================================
-       4) VALIDACIÓN DEL PORCENTAJE
-       ============================================ */
     if (discountPercentage) {
         discountPercentage.setAttribute("maxlength", "2");
 
@@ -203,9 +194,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    /* ============================================
-       5) VALIDACIÓN DEL PRECIO REBAJADO
-       ============================================ */
     if (discountPrice) {
         discountPrice.setAttribute("maxlength", "6");
 
@@ -225,13 +213,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    /* ============================================
-       6) BOTÓN CALCULAR PORCENTAJE AUTOMÁTICO
-       ============================================ */
     if (discountPrice) {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.textContent = "Calcular % automáticamente";
+        btn.textContent = "Calcular porcentaje automáticamente";
         btn.className = "button is-info is-fullwidth mt-2";
 
         discountPrice.parentNode.parentNode.appendChild(btn);
@@ -245,7 +230,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             let pct = Math.round(100 - (newPrice / basePrice * 100));
-            pct = Math.max(1, Math.min(90, pct)); // rango permitido
+            pct = Math.max(1, Math.min(90, pct));
 
             if (discountPercentage) discountPercentage.value = pct;
             if (is2x1) is2x1.checked = false;
@@ -258,4 +243,3 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 {% endblock %}
-

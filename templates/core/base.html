@@ -108,18 +108,28 @@
                 </a>
 
                 <div class="navbar-dropdown is-right">
-
                     <!-- PERFIL UNIFICADO -->
-                    <a class="navbar-item" href="{% url 'vendor:profile' %}">
-                        {% if user.vendor %}
-                            Perfil de Vendedor
-                        {% else %}
-                            Mi Perfil
-                        {% endif %}
-                    </a>
+                    <a class="navbar-item"
+                        href="
+                                {% if user.is_staff %}
+                                    {% url 'core:admin_landing' %}
+                                {% elif user.vendor %}
+                                    {% url 'vendor:profile' %}
+                                {% else %}
+                                    {% url 'vendor:profile' %}
+                                {% endif %}
+                        "
+                        >
+                            {% if user.is_staff %}
+                                Panel de Control
+                            {% elif user.vendor %}
+                                Perfil de Vendedor
+                            {% else %}
+                                Mi Perfil
+                            {% endif %}
+                        </a>
 
                     {% if user.vendor %}
-                        <a class="navbar-item" href="{% url 'vendor:edit-vendor' %}">Actualizar Perfil</a>
                         <a class="navbar-item" href="{% url 'vendor:add-product' %}">Agregar Producto</a>
                         <hr class="navbar-divider">
                     {% endif %}

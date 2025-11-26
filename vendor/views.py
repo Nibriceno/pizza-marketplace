@@ -157,7 +157,7 @@ def add_product(request):
             # ⭐ MUY IMPORTANTE — GUARDA LAS PREFERENCIAS ⭐
             form.save_m2m()
 
-            return redirect('vendor:vendor-admin')
+            return redirect('vendor:profile')
 
     else:
         form = ProductForm()
@@ -171,7 +171,7 @@ def add_product(request):
 def delete_product(request, pk):
     product = get_object_or_404(Product, pk=pk, vendor=request.user.vendor)
     product.delete()
-    return redirect('vendor:vendor-admin')
+    return redirect('vendor:profile')
 
 
 #Editar información del vendedor
@@ -319,7 +319,8 @@ def edit_offer(request, product_id):
             new_offer.save()
 
             messages.success(request, "Oferta actualizada correctamente 🎉")
-            return redirect("vendor:vendor-admin")
+            return redirect("vendor:profile")
+
 
         else:
             print("FORM ERRORS:", form.errors)

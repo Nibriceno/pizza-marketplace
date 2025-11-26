@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'marketing',
     'offers',
+    'assistant',
 ]
 
 # 🧱 Middleware
@@ -147,4 +148,7 @@ MANYCHAT_SECRET = "fh+##3lsl221#@$%$%^%$@"
 
 # 🌐 URL BASE DEL SITIO (OBLIGATORIA PARA MERCADO PAGO)
 SITE_URL = "https://nonfimbriate-usha-aerobically.ngrok-free.dev"
+
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
