@@ -1,7 +1,7 @@
-from datetime import timedelta
+from datetime import timedelta , date
 import json
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Count, Q
+from django.db.models import Count, Q ,Sum
 from django.db.models.functions import TruncDate, ExtractHour
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -12,6 +12,14 @@ from .utils import classify_section
 from vendor.models import Profile
 from vendor.models import UserPreference, Preference
 from django.utils.timezone import now
+from django.utils.timezone import localdate
+
+from django.contrib.auth.decorators import login_required
+
+
+
+
+from order.models import Order, OrderItem
 
 
 
@@ -305,3 +313,145 @@ def preferences_kpis(request):
     })
 
 
+
+
+
+
+# ================================================================
+# 📌 FUNCIONES COMUNES
+# ================================================================
+def get_date_range(range_value):
+    today = localdate()
+
+    if range_value == "today":
+        return today, today
+    if range_value == "7days":
+        return today - timedelta(days=7), today
+    if range_value == "30days":
+        return today - timedelta(days=30), today
+
+    return None, None
+
+
+# ================================================================
+# 📌 VENDOR DASHBOARD: Ventas por día
+# ================================================================
+@login_required
+def vendor_sales_data(request):
+    vendor = request.user.vendor
+    range_value = request.GET.get("range")
+
+    start_date, end_date = get_date_range(range_value)
+
+    orders = Order.objects.filter(
+        vendors=vendor,
+        status="paid"               # ← SOLO ÓRDENES PAGADAS
+    )
+
+    if start_date:
+        orders = orders.filter(
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date
+        )
+
+    data = (
+        orders.annotate(day=TruncDate("created_at"))
+              .values("day")
+              .annotate(total=Count("id"))
+              .order_by("day")
+    )
+
+    return JsonResponse(
+        [{"day": str(d["day"]), "total": d["total"]} for d in data],
+        safe=False
+    )
+
+
+# ================================================================
+# 📌 VENDOR DASHBOARD: Productos más vendidos
+# ================================================================
+@login_required
+def vendor_top_products(request):
+    vendor = request.user.vendor
+    range_value = request.GET.get("range")
+
+    start_date, end_date = get_date_range(range_value)
+
+    items = OrderItem.objects.filter(
+        vendor=vendor,
+        order__status="paid"        # ← SOLO items de órdenes pagadas
+    )
+
+    if start_date:
+        items = items.filter(
+            order__created_at__date__gte=start_date,
+            order__created_at__date__lte=end_date
+        )
+
+    data = (
+        items.values("product__title")
+             .annotate(total=Sum("quantity"))
+             .order_by("-total")
+    )
+
+    return JsonResponse(
+        [{"product": d["product__title"], "total": d["total"]} for d in data],
+        safe=False
+    )
+
+
+# ================================================================
+# 📌 ADMIN DASHBOARD: Ventas por día (GLOBAL)
+# ================================================================
+@staff_member_required
+def admin_sales_data(request):
+    rango = request.GET.get("range", "7days")
+    start, end = get_date_range(rango)
+
+    orders = Order.objects.filter(status="paid")  # ← SOLO pagadas
+
+    if start:
+        orders = orders.filter(
+            created_at__date__gte=start,
+            created_at__date__lte=end
+        )
+
+    data = (
+        orders.annotate(day=TruncDate("created_at"))
+              .values("day")
+              .annotate(total=Count("id"))
+              .order_by("day")
+    )
+
+    return JsonResponse(
+        [{"day": d["day"].strftime("%Y-%m-%d"), "total": d["total"]} for d in data],
+        safe=False
+    )
+
+
+# ================================================================
+# 📌 ADMIN DASHBOARD: Productos más vendidos (GLOBAL)
+# ================================================================
+@staff_member_required
+def admin_top_products(request):
+    rango = request.GET.get("range", "7days")
+    start, end = get_date_range(rango)
+
+    items = OrderItem.objects.filter(order__status="paid")  # ← SOLO pagadas
+
+    if start:
+        items = items.filter(
+            order__created_at__date__gte=start,
+            order__created_at__date__lte=end
+        )
+
+    data = (
+        items.values("product__title")
+             .annotate(total=Sum("quantity"))
+             .order_by("-total")
+    )
+
+    return JsonResponse(
+        [{"product": d["product__title"], "total": d["total"]} for d in data],
+        safe=False
+    )

@@ -108,4 +108,42 @@
 
 </div>
 
+
+<div class="container-summary" style="margin-top: 3rem;">
+
+    <h1>Buscar resúmenes anteriores</h1>
+    <p class="subtitle">Selecciona un día para ver los resúmenes generados en esa fecha.</p>
+
+    <form method="GET" action="{% url 'assistant:daily_summary_panel' %}">
+        <label class="label">📆 Selecciona una fecha:</label>
+        <input type="date" name="date" class="input" style="max-width: 250px;"
+            value="{{ selected_date }}">
+        <button class="button is-primary" style="margin-top: 10px;">
+            Buscar
+        </button>
+    </form>
+
+
+    {% if selected_date %}
+        <h2 class="title is-4" style="margin-top: 2rem;">
+            📝 Resúmenes del {{ selected_date }}
+        </h2>
+
+        {% if summaries_by_date %}
+            {% for s in summaries_by_date %}
+                <div class="summary-box">
+                    <div class="summary-title">Resumen</div>
+                    <p>{{ s.summary_question }}</p>
+                    <p class="small-date">Generado: {{ s.created_at }}</p>
+
+
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="notification is-warning" style="margin-top: 1rem;">
+                No hay resúmenes para esta fecha.
+            </p>
+        {% endif %}
+    {% endif %}
+</div>
 {% endblock %}

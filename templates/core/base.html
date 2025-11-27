@@ -38,7 +38,7 @@
                  style="height: 40px; width: auto; object-fit: contain;">
         </a>
 
-        
+
         <a role="button" class="navbar-burger" aria-label="menu"
            aria-expanded="false" data-target="navbarBasicExample">
             <span aria-hidden="true"></span>
@@ -75,7 +75,7 @@
         </div>
 
 
-        
+
         <div class="navbar-end">
 
         {% if request.user.is_authenticated %}
@@ -212,11 +212,11 @@
         </div>
 
         <h3 class="title is-5 has-text-centered mb-3">
-            Para mostrarte pizzerías cerca de ti 
+            Para mostrarte pizzerías cerca de ti
         </h3>
 
         <p class="has-text-centered mb-5" style="color: #555;">
-            Solo necesitamos tu ubicación aproximada 🍕  
+            Solo necesitamos tu ubicación aproximada 🍕
         </p>
 
         <button id="use-my-location"
@@ -348,6 +348,34 @@ document.getElementById("use-my-location").addEventListener("click", () => {
 
 <script src="{% static 'js/main.js' %}"></script>
 {% block scripts %}{% endblock %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    /* HAMBURGUESA */
+    const burgers = Array.from(document.querySelectorAll('.navbar-burger'));
+    burgers.forEach(burger => {
+        burger.addEventListener('click', () => {
+            const target = burger.dataset.target;
+            const menu = document.getElementById(target);
+            burger.classList.toggle('is-active');
+            menu.classList.toggle('is-active');
+        });
+    });
+
+    /* DROPDOWNS */
+    const dropdowns = document.querySelectorAll('.navbar-item.has-dropdown');
+    dropdowns.forEach(dropdown => {
+        dropdown.addEventListener('mouseenter', () => {
+            dropdown.classList.add('is-active');
+        });
+        dropdown.addEventListener('mouseleave', () => {
+            dropdown.classList.remove('is-active');
+        });
+    });
+
+});
+</script>
+
 
 </body>
 </html>

@@ -15,6 +15,7 @@ DEBUG = True  # Cambiar a False en producción real
 #Hosts mi local , ngrok, pythonanywhere
 ALLOWED_HOSTS = [
     'nicolasbriceno.pythonanywhere.com',
+    'sommstore.pythonanywhere.com',
     '127.0.0.1',
     'localhost',
     'nonfimbriate-usha-aerobically.ngrok-free.dev'
@@ -41,13 +42,12 @@ INSTALLED_APPS = [
     'botapi',  
     'analytics',
     'vendor.apps.VendorConfig',
-    'django_extensions',
     'marketing',
     'offers',
     'assistant',
 ]
 
-# 🧱 Middleware
+# Middleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -84,7 +84,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'simple_multivendor_site.wsgi.application'
 
-# 🧭 Base de datos (SQLite)
+# Base de datos (SQLite)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -92,7 +92,7 @@ DATABASES = {
     }
 }
 
-# 🔐 Password validators
+# Password validators
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -107,16 +107,16 @@ USE_L10N = True
 USE_TZ = True
 
 
-# 📁 Archivos estáticos
+#  Archivos estáticos
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'core/static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# 🖼️ Archivos media
+#  Archivos media
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# 🧑‍💻 Login & sesiones
+# Login & sesiones
 LOGIN_URL = 'core:login'
 # LOGIN_REDIRECT_URL = 'vendor:vendor-admin'
 LOGOUT_REDIRECT_URL = 'core:home'
@@ -128,7 +128,7 @@ MERCADOPAGO_SANDBOX = True  # Cambia a False cuando vayas a producción
 
 
 
-# 📧 Email (ajústalo si usarás notificaciones)
+# Email (ajústalo si usarás notificaciones)
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
@@ -137,7 +137,7 @@ EMAIL_HOST_USER = "nicolas.bricenocq@gmail.com"
 EMAIL_HOST_PASSWORD = "kqqqfatfoabsxasd"  # tu nueva contraseña de aplicación, sin espacios
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-# 💳 Mercado Pago
+#  Mercado Pago
 MERCADOPAGO_PUBLIC_KEY = os.getenv('MERCADOPAGO_PUBLIC_KEY', '')
 MERCADOPAGO_ACCESS_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN', '')
 MERCADOPAGO_WEBHOOK_SECRET = os.getenv('MERCADOPAGO_WEBHOOK_SECRET', '')
@@ -146,8 +146,8 @@ MERCADOPAGO_WEBHOOK_SECRET = os.getenv('MERCADOPAGO_WEBHOOK_SECRET', '')
 MANYCHAT_SECRET = "fh+##3lsl221#@$%$%^%$@"
 
 
-# 🌐 URL BASE DEL SITIO (OBLIGATORIA PARA MERCADO PAGO)
-SITE_URL = "https://nonfimbriate-usha-aerobically.ngrok-free.dev"
+#  URL BASE DEL SITIO (OBLIGATORIA PARA MERCADO PAGO)
+SITE_URL = "https://nicolasbriceno.pythonanywhere.com"
 
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")

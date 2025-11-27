@@ -3,10 +3,52 @@
 
 {% block content %}
 <main class="container text-center mt-5" style="max-width: 1100px;">
-  <h1>📊 Gráficos Dinámicos de Actividad</h1>
-  <p class="text-muted mb-4">Visualiza la actividad de los usuarios según los logs registrados.</p>
+  <h1>📊 Panel Global de Actividad & Ventas</h1>
+  <p class="text-muted mb-4">Estadísticas globales de la plataforma</p>
 
-  <!-- 📈 Gráfico de barras diario -->
+  <!-- ======================================================= -->
+  <!-- 📈 GLOBAL – VENTAS POR DÍA -->
+  <!-- ======================================================= -->
+  <div class="card mb-5" style="background:#fff; padding:2rem; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2 style="color:#0d9488; font-weight:600;">Ventas por día (global)</h2>
+
+      <select id="ventasRango" style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+        <option value="today">Hoy</option>
+        <option value="7days" selected>Últimos 7 días</option>
+        <option value="30days">Últimos 30 días</option>
+      </select>
+    </div>
+
+    <div style="height:280px; margin-top:1rem;">
+      <canvas id="ventasChart"></canvas>
+    </div>
+  </div>
+
+  <!-- ======================================================= -->
+  <!-- 🍕 GLOBAL – PIZZAS MÁS VENDIDAS -->
+  <!-- ======================================================= -->
+  <div class="card mb-5" style="background:#fff; padding:2rem; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2 style="color:#0d9488; font-weight:600;">Pizzas más vendidas (global)</h2>
+
+      <select id="productosRango" style="padding:8px; border-radius:5px; border:1px solid #ccc;">
+        <option value="today">Hoy</option>
+        <option value="7days" selected>Últimos 7 días</option>
+        <option value="30days">Últimos 30 días</option>
+      </select>
+    </div>
+
+    <div style="height:260px; margin-top:1rem;">
+      <canvas id="productosChart"></canvas>
+    </div>
+  </div>
+
+  <!-- ======================================================= -->
+  <!-- 🔥 TUS GRÁFICOS EXISTENTES (originales) -->
+  <!-- ======================================================= -->
+
+  <!-- 📈 Usuarios por día -->
   <div class="card mb-4" style="background:#fff; padding:2rem; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
       <h2 style="color:#0d9488; font-weight:600;">Usuarios conectados por día</h2>
@@ -23,7 +65,7 @@
     </div>
   </div>
 
-  <!-- ⏰ Gráfico de actividad por hora -->
+  <!-- ⏰ Actividad por hora -->
   <div class="card mb-4" style="background:#fff; padding:2rem; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
       <h2 style="color:#0d9488; font-weight:600;">Actividad por hora del día</h2>
@@ -42,7 +84,7 @@
     </div>
   </div>
 
-  <!-- 🥧 Gráfico de torta -->
+  <!-- 🥧 Errores -->
   <div class="card" style="display:flex; flex-wrap:wrap; justify-content:center; gap:2rem; align-items:center; background:#fff; padding:2rem; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
     <div style="flex:1 1 45%; min-width:350px; height:260px;">
       <canvas id="erroresChart"></canvas>
@@ -58,7 +100,7 @@
     </div>
   </div>
 
-  <!-- 🌿 KPI Preferencias Alimentarias -->
+  <!-- 🌿 KPI Preferencias -->
   <div class="kpi-section mt-5">
     <h2 style="color:#0d9488; font-weight:700;">Preferencias Alimentarias</h2>
 
@@ -76,7 +118,6 @@
 
     <h3 style="font-size:1.3rem; font-weight:600; margin-bottom:1rem;">Preferencias más activadas</h3>
 
-    <!-- 🔥 CONTENEDOR FIJO PARA EVITAR SCROLL INFINITO -->
     <div style="height:300px; margin-bottom:2rem;">
         <canvas id="chartTopPreferencias"></canvas>
     </div>
@@ -92,30 +133,66 @@ Chart.defaults.maintainAspectRatio = false;
 
 const animOpts = { duration: 600, easing: "easeInOutQuad" };
 
-// 🟩 Usuarios por día
+///////////////////////////////////////////////////////////////////
+/// 🔥 1) VENTAS GLOBALES
+///////////////////////////////////////////////////////////////////
+let ventasChart = new Chart(document.getElementById("ventasChart"), {
+  type: "bar",
+  data: { labels: [], datasets: [{ label: "Pedidos", data: [], backgroundColor:"#0d9488" }] },
+  options: { scales: { y: { beginAtZero: true } } }
+});
+
+let productosChart = new Chart(document.getElementById("productosChart"), {
+  type: "bar",
+  data: { labels: [], datasets: [{ label: "Ventas", data: [], backgroundColor:"#f97316" }] },
+  options: { indexAxis: "y", scales: { x: { beginAtZero: true } } }
+});
+
+async function loadVentas() {
+  const rango = document.getElementById("ventasRango").value;
+  const res = await fetch(`/analytics/admin/sales-data/?range=${rango}`);
+  const data = await res.json();
+
+  ventasChart.data.labels = data.map(d => d.day);
+  ventasChart.data.datasets[0].data = data.map(d => d.total);
+  ventasChart.update();
+}
+
+async function loadProductos() {
+  const rango = document.getElementById("productosRango").value;
+  const res = await fetch(`/analytics/admin/top-products/?range=${rango}`);
+  const data = await res.json();
+
+  productosChart.data.labels = data.map(d => d.product);
+  productosChart.data.datasets[0].data = data.map(d => d.total);
+  productosChart.update();
+}
+
+document.getElementById("ventasRango").addEventListener("change", loadVentas);
+document.getElementById("productosRango").addEventListener("change", loadProductos);
+
+
+///////////////////////////////////////////////////////////////////
+/// 🔥 2) GRÁFICOS DE LOGS (TUS ORIGINALES)
+///////////////////////////////////////////////////////////////////
+
 const usuariosChart = new Chart(document.getElementById('usuariosChart'), {
   type: 'bar',
   data: { labels: [], datasets: [{ label: 'Usuarios por día', data: [], backgroundColor: '#0d9488', borderRadius: 6 }] },
   options: { animation: animOpts, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
 });
 
-// 🟨 Actividad por hora
 const horasChart = new Chart(document.getElementById('horasChart'), {
   type: 'line',
   data: { labels: [], datasets: [{ label: 'Eventos por hora', data: [], borderColor: '#0d9488', backgroundColor: 'rgba(13,148,136,0.25)', fill: true, tension: 0.3 }] },
   options: { animation: animOpts, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
 });
 
-// 🥧 Errores
 const erroresChart = new Chart(document.getElementById('erroresChart'), {
   type: 'pie',
   data: { labels: ['Errores', 'Correctos'], datasets: [{ data: [0, 0], backgroundColor: ['#ef4444', '#10b981'] }] },
   options: { animation: animOpts, plugins: { legend: { display: true, position: 'bottom' } } }
 });
-
-// ============================================================
-// 🔄 Lógica para actualizar los gráficos de logs
-// ============================================================
 
 async function actualizarDatos() {
   const rango = document.getElementById('rango').value;
@@ -129,23 +206,19 @@ async function actualizarDatos() {
   const dataDias = await resDias.json();
   const dataHoras = await resHoras.json();
 
-  // 📊 Actualizar gráfico de días
   usuariosChart.data.labels = dataDias.usuarios.map(e => e.fecha);
   usuariosChart.data.datasets[0].data = dataDias.usuarios.map(e => e.total);
   usuariosChart.update();
 
-  // ⏰ Actualizar gráfico de horas
   horasChart.data.labels = dataHoras.labels;
   horasChart.data.datasets[0].data = dataHoras.values;
   horasChart.update();
 
-  // 🥧 Actualizar gráfico de errores
   const errores = dataDias.errores;
   const correctos = dataDias.total - errores;
   erroresChart.data.datasets[0].data = [errores, correctos];
   erroresChart.update();
 
-  // 📋 Actualizar info de errores
   const total = errores + correctos;
   document.getElementById('erroresTotal').textContent = errores;
   document.getElementById('correctosTotal').textContent = correctos;
@@ -158,9 +231,10 @@ document.getElementById('rango').addEventListener('change', actualizarDatos);
 document.getElementById('periodo').addEventListener('change', actualizarDatos);
 setInterval(actualizarDatos, 30000);
 
-// ============================================================
-// 🔥 KPI Preferencias Alimentarias
-// ============================================================
+
+///////////////////////////////////////////////////////////////////
+/// 🔥 3) KPI PREFERENCIAS
+///////////////////////////////////////////////////////////////////
 
 let chartPreferencias = null;
 
@@ -206,5 +280,15 @@ fetch("/analytics/preferences_kpis/")
         });
 
     });
+    
+
+///////////////////////////////////////////////////////////////////
+/// 🚀 CARGA INICIAL
+///////////////////////////////////////////////////////////////////
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadVentas();
+  loadProductos();
+});
 </script>
 {% endblock %}

@@ -333,3 +333,8 @@ def edit_offer(request, product_id):
         "form": form,
         "offer": offer,
     })
+
+
+@login_required
+def vendor_dashboard(request):
+    return render(request, "vendor/vendor_profile.html")

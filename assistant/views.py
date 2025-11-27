@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.utils import timezone
-
+from datetime import date
 from product.models import Product
 from .models import UserQuestion, DailySummaryQuestion
 
@@ -174,3 +174,37 @@ def generate_daily_summary(request):
 
     messages.success(request, "Resumen generado correctamente.")
     return redirect("/assistant/questions/")
+
+
+
+
+
+def summary_by_date(request):
+    selected_date = request.GET.get("date")
+    summaries = None
+
+    if selected_date:
+        summaries = DailySummaryQuestion.objects.filter(date=selected_date)
+
+    return render(request, "assistant/summary_by_date.html", {
+        "selected_date": selected_date,
+        "summaries": summaries
+    })
+
+
+def daily_summary_panel(request):
+    today = date.today()
+    latest_summary = DailySummaryQuestion.objects.filter(date=today).first()
+
+    # 🔍 Buscar por fecha si viene del formulario GET
+    selected_date = request.GET.get("date")
+    summaries_by_date = None
+
+    if selected_date:
+        summaries_by_date = DailySummaryQuestion.objects.filter(date=selected_date)
+
+    return render(request, "assistant/user_questions.html", {
+        "latest_summary": latest_summary,
+        "selected_date": selected_date,
+        "summaries_by_date": summaries_by_date,
+    })
