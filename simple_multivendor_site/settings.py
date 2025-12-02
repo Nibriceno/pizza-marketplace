@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'marketing',
     'offers',
     'assistant',
+    'vendorapi',
+    "vendorpos",
 ]
 
 # Middleware
@@ -57,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'analytics.middleware.ErrorLoggingMiddleware',
+    'vendorapi.middleware.ApiKeyMiddleware',
 ]
 
 # URL y Templates
@@ -84,13 +87,34 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'simple_multivendor_site.wsgi.application'
 
-# Base de datos (SQLite)
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+
+import os
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.mysql'),
+        'NAME': os.getenv('DB_NAME', ''),
+        'USER': os.getenv('DB_USER', ''),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', ''),
+        'PORT': os.getenv('DB_PORT', '3306'),
+        'OPTIONS': {
+            'init_command': os.getenv('DB_OPTIONS_INIT', "SET sql_mode='STRICT_TRANS_TABLES'"),
+            'charset': os.getenv('DB_CHARSET', 'utf8mb4'),
+        }
     }
 }
+
+
+
 
 # Password validators
 AUTH_PASSWORD_VALIDATORS = [
@@ -147,7 +171,7 @@ MANYCHAT_SECRET = "fh+##3lsl221#@$%$%^%$@"
 
 
 #  URL BASE DEL SITIO (OBLIGATORIA PARA MERCADO PAGO)
-SITE_URL = "https://nicolasbriceno.pythonanywhere.com"
+SITE_URL = "https://nonfimbriate-usha-aerobically.ngrok-free.dev"
 
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")

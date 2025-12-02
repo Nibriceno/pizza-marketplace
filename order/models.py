@@ -14,15 +14,20 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     paid_amount = models.IntegerField(default=0)    
     paid = models.BooleanField(default=False)
-    status = models.CharField(                
+    status = models.CharField(
         max_length=20,
         choices=[
             ("pending", "Pendiente"),
             ("paid", "Pagada"),
+            ("accepted", "Aceptada"),
+            ("preparing", "Preparando"),
+            ("ready", "Lista para retiro"),
+            ("delivered", "Entregada"),
             ("cancelled", "Cancelada"),
         ],
         default="pending",
     )
+
 
     vendors = models.ManyToManyField(Vendor, related_name="orders")
 

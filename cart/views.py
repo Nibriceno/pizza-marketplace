@@ -340,10 +340,14 @@ def webhook(request):
             return JsonResponse({"status": "ok"}, status=200)
 
         #  Marcar orden como pagada
+        #  Marcar orden como pagada
         order.paid_amount = data.get("transaction_amount", order.paid_amount)
-        if hasattr(order, "paid"):
-            order.paid = True
+
+        order.paid = True
+        order.status = "paid"   # ← FIX IMPORTANTE
+
         order.save()
+
 
         # Enviar correos
         notify_customer(order)

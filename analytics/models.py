@@ -6,7 +6,7 @@ class UserActionLog(models.Model):
     """Registro de acciones de usuario en el sitio y el bot."""
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     user_name = models.CharField(max_length=150, blank=True, null=True)
-    action = models.CharField(max_length=255)
+    action = models.TextField()
     page = models.CharField(max_length=100, blank=True, null=True)      
     section = models.CharField(max_length=100, blank=True, null=True)   
     product_id = models.IntegerField(blank=True, null=True)

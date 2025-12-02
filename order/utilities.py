@@ -4,7 +4,7 @@ from cart.cart import Cart
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-
+import requests
 
 # =============================
 # 📧 EMAIL A VENDEDOR
@@ -79,47 +79,30 @@ def checkout(
         product = item["product"]
         quantity = item["quantity"]
 
-        # Precio final por unidad (ya procesado: % / price fijo)
         unit_price = product.get_final_price()
         original_price = product.price
 
-        # ==========================================================
-        # 🧠 CALCULAR PRECIO TOTAL REAL DEL ÍTEM (incluye 2x1)
-        # ==========================================================
         if product.active_offer and product.active_offer.is_2x1:
-            # 2x1 → unidades efectivamente cobradas
             effective_qty = (quantity // 2) + (quantity % 2)
             total_item_price = effective_qty * unit_price
-
-            # Para reportes
             discount_pct = 50  
-
         else:
             effective_qty = quantity
             total_item_price = quantity * unit_price
-
-            # porcentaje real si es descuento tradicional
             discount_pct = 0
             if product.active_offer and product.active_offer.discount_percentage:
                 discount_pct = product.active_offer.discount_percentage
 
-        # ==========================================================
-        # 🧾 GUARDAR EN ORDERITEM
-        # ==========================================================
         OrderItem.objects.create(
             order=order,
             product=product,
             vendor=product.vendor,
-
-            # Guardamos *unit_price*, y *effective_qty* para que coincida
-            price=unit_price,               # precio final por unidad real
-            original_price=original_price,  # precio normal
+            price=unit_price,
+            original_price=original_price,
             discount_percentage=discount_pct,
-
-            quantity=effective_qty,         # UNIDADES REALMENTE PAGADAS
+            quantity=effective_qty, 
         )
 
-        # relacionar vendor
         order.vendors.add(product.vendor)
 
     # 3️⃣ Enviar correos
@@ -129,5 +112,48 @@ def checkout(
             notify_customer(order)
         except Exception as e:
             print(f"⚠️ Error enviando notificaciones: {e}")
+
+    # 4️⃣ 🔥 ENVIAR WEBHOOK (INTEGRACIÓN EXTERNA)
+    send_order_webhook(order)
+
+    # 5️⃣ 🔙 Devolver orden
+    return order
+
+
+# =============================
+# 🔥 WEBHOOK FUNCTION
+# =============================
+
+
+def send_order_webhook(order):
+    url = "https://webhook.site/b43f9bc4-5d08-4b71-a250-c5f7e9e818a0"
+
+    payload = {
+        "order_id": order.id,
+        "vendors": [vendor.name for vendor in order.vendors.all()],
+        "total": order.paid_amount,
+        "status": "new",
+        "created_at": str(order.created_at),
+        "items": [
+            {
+                "product": item.product.title,
+                "qty": item.quantity,
+                "price": item.price
+            }
+            for item in order.items.all()  # ✔ Aquí está el fix
+        ]
+    }
+
+    headers = {
+        "x-api-key": "e8bae2ac9040b1a5da2a1d632f025c001bc88a27ad73cb253b2f52fde90b6167",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        print("🔥 Webhook enviado:", response.status_code)
+        print(response.text)
+    except Exception as e:
+        print("❌ Error enviando webhook:", e)
 
     return order

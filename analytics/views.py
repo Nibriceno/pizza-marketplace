@@ -13,8 +13,9 @@ from vendor.models import Profile
 from vendor.models import UserPreference, Preference
 from django.utils.timezone import now
 from django.utils.timezone import localdate
-
+from django.utils import timezone
 from django.contrib.auth.decorators import login_required
+from django.utils.timezone import now, localtime
 
 
 
@@ -181,47 +182,40 @@ def manychat_log(request):
     
 @staff_member_required
 def analytics_data(request):
-    """     Devuelve datos para los gráficos de actividad de usuarios.
+    """Devuelve datos para los gráficos de actividad de usuarios.
     Permite filtrar por rango de días 7 o 14.
     """
     try:
-        # parametro de rango por defecto 1 semanaa
         rango = int(request.GET.get("rango", 7))
         if rango not in [7, 14]:
-            rango = 7  #  fallback en caso de valor invalido
+            rango = 7
     except ValueError:
         rango = 7
 
-    hoy = now().date()
-
-    #  Generar lista de fechas desde hace 'rango' días hasta hoy
+    hoy = localtime().date()
     fecha_inicio = hoy - timedelta(days=rango - 1)
     fechas = [fecha_inicio + timedelta(days=i) for i in range(rango)]
 
-    #  Buscar logs de login o actividad 
-    logs = (
-        UserActionLog.objects.filter(
-            Q(action__icontains="inició sesión")
-            | Q(action__icontains="login")
-            | Q(action__icontains="visitó")
-            | Q(action__icontains="entró"),
-            timestamp__date__gte=fecha_inicio,
-            timestamp__date__lte=hoy,
-        )
-        .annotate(fecha=TruncDate("timestamp"))
-        .values("fecha")
-        .annotate(total=Count("id"))
+    # Filtrar logs de login o actividad en el rango
+    logs_queryset = UserActionLog.objects.filter(
+        Q(action__icontains="inició sesión")
+        | Q(action__icontains="login")
+        | Q(action__icontains="visitó")
+        | Q(action__icontains="entró"),
+        timestamp__gte=localtime().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=rango-1),
+        timestamp__lte=localtime(),
     )
 
-    # Convertir resultados a diccionario
-    data_dict = {str(item["fecha"]): item["total"] for item in logs}
+    # Agrupar manualmente por día (zona local)
+    data_dict = {}
+    for log in logs_queryset:
+        day = localtime(log.timestamp).date()
+        data_dict[day] = data_dict.get(day, 0) + 1
 
-    # Completar los días sin datos con 0
-    data_completa = [
-        {"fecha": str(f), "total": data_dict.get(str(f), 0)} for f in fechas
-    ]
+    # Completar los días sin datos
+    data_completa = [{"fecha": d.strftime("%Y-%m-%d"), "total": data_dict.get(d, 0)} for d in fechas]
 
-    # Totales generales del sistema
+    # Totales generales
     total = UserActionLog.objects.count()
     errores = UserActionLog.objects.filter(action__icontains="error").count()
 
@@ -238,33 +232,44 @@ def graficos(request):
   #  graficos en vivo con chartjs desde mi endpoint  /analytics/api/data/
     return render(request, "analytics/graficos.html")
 
+
 @staff_member_required
 def analytics_horas(request):
-    
     periodo = request.GET.get("periodo", "historico")
-    hoy = now().date()
+    hoy = localtime().date()
 
+    # Filtrar logs según periodo
     if periodo == "diario":
-        logs = UserActionLog.objects.filter(timestamp__date=hoy)
+        logs = UserActionLog.objects.filter(
+            timestamp__gte=localtime().replace(hour=0, minute=0, second=0, microsecond=0),
+            timestamp__lte=localtime()
+        )
     elif periodo == "semanal":
-        logs = UserActionLog.objects.filter(timestamp__date__gte=hoy - timedelta(days=7))
+        logs = UserActionLog.objects.filter(
+            timestamp__gte=localtime() - timedelta(days=7),
+            timestamp__lte=localtime()
+        )
     elif periodo == "mensual":
-        logs = UserActionLog.objects.filter(timestamp__date__gte=hoy - timedelta(days=30))
-    else:  # histrico
+        logs = UserActionLog.objects.filter(
+            timestamp__gte=localtime() - timedelta(days=30),
+            timestamp__lte=localtime()
+        )
+    else:
         logs = UserActionLog.objects.all()
 
-    horas = (
-        logs.annotate(hora=ExtractHour("timestamp"))
-        .values("hora")
-        .annotate(total=Count("id"))
-        .order_by("hora")
-    )
+    # Agrupar por hora manualmente
+    horas_dict = {h: 0 for h in range(24)}
+    for log in logs:
+        hora = localtime(log.timestamp).hour
+        horas_dict[hora] += 1
 
-    data = {
-        "labels": [f"{h['hora']:02d}:00" for h in horas],
-        "values": [h["total"] for h in horas],
-    }
-    return JsonResponse(data)
+    labels = [f"{h:02d}:00" for h in range(24)]
+    values = [horas_dict[h] for h in range(24)]
+
+    return JsonResponse({
+        "labels": labels,
+        "values": values,
+    })
 
 
 def preferences_kpis(request):
@@ -274,15 +279,13 @@ def preferences_kpis(request):
     - Ranking de preferencias (add)
     - Total de cambios de preferencias del mes
     """
-
-    today = now()
+    today = localtime()  # asegura timezone local
     month = today.month
     year = today.year
 
-    #  Intentar obtener la preferencia "vegana"
+    # Intentar obtener la preferencia "vegana"
     pref_vegano = Preference.objects.filter(slug="vegana").first()
 
-    # Si existe, contar usuarios veganos este mes
     veganos_mes = 0
     if pref_vegano:
         veganos_mes = UserPreference.objects.filter(
@@ -315,78 +318,87 @@ def preferences_kpis(request):
 
 
 
-
-
 # ================================================================
 # 📌 FUNCIONES COMUNES
 # ================================================================
-def get_date_range(range_value):
-    today = localdate()
-
+def get_datetime_range(range_value):
+    """Devuelve start y end como datetime aware para filtrar correctamente."""
+    end = now()
     if range_value == "today":
-        return today, today
-    if range_value == "7days":
-        return today - timedelta(days=7), today
-    if range_value == "30days":
-        return today - timedelta(days=30), today
+        start = end.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif range_value == "7days":
+        start = end - timedelta(days=6)
+    elif range_value == "30days":
+        start = end - timedelta(days=29)
+    else:
+        start = end - timedelta(days=6)
+    return start, end
 
-    return None, None
+# ===================== VENDOR DASHBOARD: Ventas por día =====================
 
-
-# ================================================================
-# 📌 VENDOR DASHBOARD: Ventas por día
-# ================================================================
 @login_required
 def vendor_sales_data(request):
     vendor = request.user.vendor
-    range_value = request.GET.get("range")
+    range_value = request.GET.get("range", "7days")
 
-    start_date, end_date = get_date_range(range_value)
+    # Calcular datetime de inicio y fin
+    today = timezone.localtime()
+    if range_value == "today":
+        start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif range_value == "7days":
+        start = today - timedelta(days=6)
+    elif range_value == "30days":
+        start = today - timedelta(days=29)
+    else:
+        start = today - timedelta(days=6)  # fallback 7 días
 
+    end = today
+
+    # Filtrar órdenes pagadas del vendor en el rango
     orders = Order.objects.filter(
         vendors=vendor,
-        status="paid"               # ← SOLO ÓRDENES PAGADAS
+        status__iexact="paid",
+        created_at__gte=start,
+        created_at__lte=end,
     )
 
-    if start_date:
-        orders = orders.filter(
-            created_at__date__gte=start_date,
-            created_at__date__lte=end_date
-        )
+    # Agrupar manualmente por día (zona local)
+    data_dict = {}
+    for order in orders:
+        day = timezone.localtime(order.created_at).date()
+        data_dict[day] = data_dict.get(day, 0) + 1
 
-    data = (
-        orders.annotate(day=TruncDate("created_at"))
-              .values("day")
-              .annotate(total=Count("id"))
-              .order_by("day")
-    )
+    # Rellenar días sin ventas
+    dates = [start.date() + timedelta(days=i) for i in range((end.date() - start.date()).days + 1)]
+    data_complete = [{"day": d.strftime("%Y-%m-%d"), "total": data_dict.get(d, 0)} for d in dates]
 
-    return JsonResponse(
-        [{"day": str(d["day"]), "total": d["total"]} for d in data],
-        safe=False
-    )
+    return JsonResponse(data_complete, safe=False)
 
-
-# ================================================================
-# 📌 VENDOR DASHBOARD: Productos más vendidos
-# ================================================================
+# ===================== VENDOR DASHBOARD: Productos más vendidos =====================
 @login_required
 def vendor_top_products(request):
     vendor = request.user.vendor
-    range_value = request.GET.get("range")
+    range_value = request.GET.get("range", "7days")
 
-    start_date, end_date = get_date_range(range_value)
+    # Calcular datetime de inicio y fin
+    today = timezone.localtime()
+    if range_value == "today":
+        start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif range_value == "7days":
+        start = today - timedelta(days=6)
+    elif range_value == "30days":
+        start = today - timedelta(days=29)
+    else:
+        start = today - timedelta(days=6)  # fallback 7 días
+    end = today
 
+    # Filtrar items de órdenes pagadas del vendor
     items = OrderItem.objects.filter(
         vendor=vendor,
-        order__status="paid"        # ← SOLO items de órdenes pagadas
+        order__status__iexact="paid",
+        order__created_at__gte=start,
+        order__created_at__lte=end,
     )
-
-    if start_date:
-        items = items.filter(
-            order__created_at__date__gte=start_date,
-            order__created_at__date__lte=end_date
-        )
 
     data = (
         items.values("product__title")
@@ -400,50 +412,54 @@ def vendor_top_products(request):
     )
 
 
-# ================================================================
-# 📌 ADMIN DASHBOARD: Ventas por día (GLOBAL)
-# ================================================================
 @staff_member_required
 def admin_sales_data(request):
     rango = request.GET.get("range", "7days")
-    start, end = get_date_range(rango)
+    start, end = get_datetime_range(rango)
 
-    orders = Order.objects.filter(status="paid")  # ← SOLO pagadas
-
-    if start:
-        orders = orders.filter(
-            created_at__date__gte=start,
-            created_at__date__lte=end
-        )
-
-    data = (
-        orders.annotate(day=TruncDate("created_at"))
-              .values("day")
-              .annotate(total=Count("id"))
-              .order_by("day")
+    orders = Order.objects.filter(
+        status__iexact="paid",
+        created_at__gte=start,
+        created_at__lte=end
     )
 
-    return JsonResponse(
-        [{"day": d["day"].strftime("%Y-%m-%d"), "total": d["total"]} for d in data],
-        safe=False
-    )
+    # Generar lista de días
+    start_date = start.date()
+    end_date = end.date()
+    dates = [start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1)]
 
+    # Contar órdenes por día
+    data_dict = {}
+    for o in orders:
+        day = o.created_at.astimezone().date()  # convertir a zona local
+        data_dict[day] = data_dict.get(day, 0) + 1
 
-# ================================================================
-# 📌 ADMIN DASHBOARD: Productos más vendidos (GLOBAL)
-# ================================================================
+    data_complete = [{"day": d.strftime("%Y-%m-%d"), "total": data_dict.get(d, 0)} for d in dates]
+
+    return JsonResponse(data_complete, safe=False)
+
+# ===================== ADMIN DASHBOARD: Productos más vendidos =====================
 @staff_member_required
 def admin_top_products(request):
-    rango = request.GET.get("range", "7days")
-    start, end = get_date_range(rango)
+    range_value = request.GET.get("range", "7days")
 
-    items = OrderItem.objects.filter(order__status="paid")  # ← SOLO pagadas
+    # Calcular datetime de inicio y fin
+    today = timezone.localtime()
+    if range_value == "today":
+        start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif range_value == "7days":
+        start = today - timedelta(days=6)
+    elif range_value == "30days":
+        start = today - timedelta(days=29)
+    else:
+        start = today - timedelta(days=6)  # fallback 7 días
+    end = today
 
-    if start:
-        items = items.filter(
-            order__created_at__date__gte=start,
-            order__created_at__date__lte=end
-        )
+    items = OrderItem.objects.filter(
+        order__status__iexact="paid",
+        order__created_at__gte=start,
+        order__created_at__lte=end,
+    )
 
     data = (
         items.values("product__title")

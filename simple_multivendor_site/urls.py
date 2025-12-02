@@ -26,6 +26,11 @@ urlpatterns = [
     path("api/marketing/", include("marketing.urls")),
 
 
+    path("vendorapi/", include("vendorapi.urls")),
+    path("vendorpos/", include("vendorpos.urls")),
+
+
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 #  Página personalizada de error 404
