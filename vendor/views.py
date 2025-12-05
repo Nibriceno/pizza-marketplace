@@ -3,9 +3,8 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.utils.text import slugify  
 from .forms import SignUpForm, ProductForm
-from .models import Vendor, Profile
+from .models import Vendor, Profile, Preference, Allergy   # 👈 Allergy aquí
 from product.models import Product
-from .models import Preference
 from django.contrib import messages
 from order.models import  Order
 from offers.models import Offer
@@ -138,10 +137,11 @@ def vendor_admin(request):
 
     return render(request, 'vendor/vendor_admin.html', context)
 
-# Agregar producto
-@login_required
 
+
+@login_required
 def add_product(request):
+
     if not hasattr(request.user, 'vendor'):
         return redirect('core:home')
 
@@ -150,15 +150,13 @@ def add_product(request):
 
         if form.is_valid():
             product = form.save(commit=False)
-            product.vendor = request.user.vendor
-            product.slug = slugify(product.title)
-            product.save()
+            product.vendor = request.user.vendor  # asigna el vendor dueño del producto
+            product.save()                        # aquí se genera el slug automáticamente
 
-            # ⭐ MUY IMPORTANTE — GUARDA LAS PREFERENCIAS ⭐
+            # ⭐ MUY IMPORTANTE — GUARDA M2M (preferences + ingredients)
             form.save_m2m()
 
             return redirect('vendor:profile')
-
     else:
         form = ProductForm()
 
@@ -218,15 +216,10 @@ def profile_view(request):
     if hasattr(user, "vendor"):
         vendor = user.vendor
 
-        # Todos los productos del vendedor
         products = vendor.products.all()
-
-        # Todos los items vendidos por este vendedor
         items = vendor.items.select_related("order", "product").all()
-
-        # Todos los pedidos donde participa este vendedor
         orders = (
-             Order.objects.filter(items__vendor=vendor)
+            Order.objects.filter(items__vendor=vendor)
             .distinct()
             .order_by('-id')
         )
@@ -238,19 +231,23 @@ def profile_view(request):
             "items": items,
         })
 
-
-    # Si es cliente → perfil cliente
+    # PERFIL CLIENTE
     profile = user.profile
     preferences = Preference.objects.all()
-    selected_ids = list(profile.preferences.values_list("id", flat=True))
+    allergies = Allergy.objects.all()   # 👈 importa Allergy arriba
 
-    # 🔥 SI HAY POST → GUARDAR PREFERENCIAS
+    selected_ids = list(profile.preferences.values_list("id", flat=True))
+    selected_allergies_ids = list(profile.allergies.values_list("id", flat=True))
+
     if request.method == "POST":
-        selected = request.POST.getlist("preferences")
-        profile.preferences.set(selected)
+        selected_prefs = request.POST.getlist("preferences")
+        selected_algs = request.POST.getlist("allergies")
+
+        profile.preferences.set(selected_prefs)
+        profile.allergies.set(selected_algs)
         profile.save()
 
-        messages.success(request, "Preferencias actualizadas correctamente 🍕")
+        messages.success(request, "Preferencias y alergias actualizadas correctamente 🍕")
         return redirect("vendor:profile")
 
     return render(request, "vendor/customer_profile.html", {
@@ -258,27 +255,41 @@ def profile_view(request):
         "username": user.username,
         "email": user.email,
         "preferences": preferences,
+        "allergies": allergies,
         "selected_ids": selected_ids,
+        "selected_allergies_ids": selected_allergies_ids,
     })
+
 
 
 @login_required
 def select_preferences(request):
     profile = request.user.profile
     preferences = Preference.objects.all()
+    allergies = Allergy.objects.all()
 
-    # Si ya tiene preferencias → saltar onboarding
-    if profile.preferences.exists():
-        return redirect('home')
-
-    if request.method == "POST":
-        selected = request.POST.getlist("preferences")
-        profile.preferences.set(selected)
-        profile.save()
+    # Si ya tiene preferencias o alergias → saltar onboarding
+    if profile.preferences.exists() or profile.allergies.exists():
         return redirect('core:home')
 
+    if request.method == "POST":
+        selected_prefs = request.POST.getlist("preferences")
+        selected_allergies = request.POST.getlist("allergies")
+
+        profile.preferences.set(selected_prefs)
+        profile.allergies.set(selected_allergies)
+        profile.save()
+
+        return redirect('core:home')
+
+    selected_preferences_ids = list(profile.preferences.values_list("id", flat=True))
+    selected_allergies_ids = list(profile.allergies.values_list("id", flat=True))
+
     return render(request, "vendor/select_preferences.html", {
-        "preferences": preferences
+        "preferences": preferences,
+        "allergies": allergies,
+        "selected_preferences_ids": [str(i) for i in selected_preferences_ids],
+        "selected_allergies_ids": [str(i) for i in selected_allergies_ids],
     })
 
 
@@ -286,17 +297,31 @@ def select_preferences(request):
 def edit_preferences(request):
     profile = request.user.profile
     preferences = Preference.objects.all()
+    allergies = Allergy.objects.all()   # 👈 agregamos alergias
 
     if request.method == "POST":
-        selected = request.POST.getlist("preferences")
-        profile.preferences.set(selected)
+        selected_prefs = request.POST.getlist("preferences")
+        selected_allergies = request.POST.getlist("allergies")
+
+        profile.preferences.set(selected_prefs)
+        profile.allergies.set(selected_allergies)
         profile.save()
+
+        messages.success(request, "Configuración actualizada correctamente 🍕")
         return redirect("vendor:edit-preferences")
+
+    # IDs seleccionados actualmente (para precargar chips)
+    selected_preferences_ids = list(profile.preferences.values_list("id", flat=True))
+    selected_allergies_ids = list(profile.allergies.values_list("id", flat=True))
 
     return render(request, "vendor/edit_preferences.html", {
         "preferences": preferences,
-        "selected": profile.preferences.all()
+        "allergies": allergies,
+        "selected_preferences_ids": [str(i) for i in selected_preferences_ids],
+        "selected_allergies_ids": [str(i) for i in selected_allergies_ids],
     })
+
+
 @login_required
 def edit_offer(request, product_id):
     if not hasattr(request.user, "vendor"):

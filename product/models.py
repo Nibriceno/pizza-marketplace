@@ -18,6 +18,68 @@ class Category(models.Model):
         return self.title
 
 
+class IngredientCategory(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    slug = models.SlugField(max_length=60, unique=True, blank=True)
+    ordering = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["ordering", "name"]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        """Genera un slug único basado en el name si no existe."""
+        if not self.slug:
+            base_slug = slugify(self.name)
+            slug = base_slug
+            num = 1
+
+            while IngredientCategory.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{num}"
+                num += 1
+
+            self.slug = slug
+
+        super().save(*args, **kwargs)
+
+
+class Ingredient(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=110, unique=True, blank=True)
+
+    category = models.ForeignKey(
+        IngredientCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ingredients",
+        verbose_name="Categoría",
+    )
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        """Genera un slug único basado en el name si no existe."""
+        if not self.slug:
+            base_slug = slugify(self.name)
+            slug = base_slug
+            num = 1
+
+            while Ingredient.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{num}"
+                num += 1
+
+            self.slug = slug
+
+        super().save(*args, **kwargs)
+
+
 class Product(models.Model):
     category = models.ForeignKey(Category, related_name='products', on_delete=models.CASCADE)
     vendor = models.ForeignKey(Vendor, related_name="products", on_delete=models.CASCADE)
@@ -34,6 +96,15 @@ class Product(models.Model):
 
     # Preferencias alimentarias
     preferences = models.ManyToManyField(Preference, blank=True)
+
+    # Ingredientes (usando tabla intermedia escalable)
+    ingredients = models.ManyToManyField(
+        "Ingredient",
+        through="ProductIngredient",
+        related_name="products",
+        blank=True,
+        verbose_name="Ingredientes",
+    )
 
     class Meta:
         ordering = ['-added_date']
@@ -84,16 +155,14 @@ class Product(models.Model):
 
     # --------------------------------------------------------
     # OFERTAS (se integra con Offer OneToOne)
-        # --------------------------------------------------------
+    # --------------------------------------------------------
     @property
     def active_offer(self):
-        """
-        Retorna la oferta activa si existe.
-        """
+        """Retorna la oferta activa si existe."""
         try:
             offer = self.offer  # related_name="offer"
             return offer if offer.is_current() else None
-        except:
+        except Exception:
             return None
 
     def has_active_offer(self):
@@ -124,9 +193,7 @@ class Product(models.Model):
         return self.price
 
     def get_offer_percentage(self):
-        """
-        Devuelve porcentaje real del descuento (solo si aplica).
-        """
+        """Devuelve porcentaje real del descuento (solo si aplica)."""
         offer = self.active_offer
         if not offer:
             return 0
@@ -140,5 +207,23 @@ class Product(models.Model):
         try:
             pct = round(100 - ((final / original) * 100))
             return max(1, min(pct, 90))
-        except:
+        except Exception:
             return 0
+
+
+class ProductIngredient(models.Model):
+    """
+    Versión simple:
+    - Solo une Product con Ingredient.
+    - Más adelante puedes agregar: is_optional, extra_price, is_default, etc.
+    """
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+
+    # futuro: is_default, is_optional, extra_price, ordering...
+
+    class Meta:
+        unique_together = ("product", "ingredient")
+
+    def __str__(self):
+        return f"{self.product.title} - {self.ingredient.name}"

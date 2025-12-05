@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import Vendor
 
-from .models import Profile
+from .models import Profile,  Allergy
 
 
 admin.site.register(Vendor)
@@ -21,3 +21,10 @@ class ProfileAdmin(admin.ModelAdmin):
     list_filter = ('country', 'region', 'provincia', 'comuna')
     search_fields = ('user__username', 'user__email', 'phone', 'address')
     ordering = ('user__username',)
+
+
+@admin.register(Allergy)
+class AllergyAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name", "description")
+    filter_horizontal = ("ingredients",)

@@ -86,12 +86,60 @@
 
     <hr>
 
+    {# ⚠️ BLOQUE DE ALERTA DE ALERGIA EN LA MISMA PÁGINA #}
+    {% if allergy_warning %}
+      <div class="notification is-danger is-light" style="border-radius: 12px; padding: 20px;">
+        <h3 class="title is-5 mb-2">⚠️ Posible alergia detectada</h3>
+
+        <p class="mb-3">
+          La pizza <strong>{{ product.title }}</strong> contiene ingredientes asociados
+          a tus alergias registradas:
+        </p>
+
+        <ul class="mb-4" style="margin-left: 1rem;">
+          {% for c in conflicts %}
+            <li>
+              <strong>{{ c.allergy.name }}</strong>:
+              {% for ing in c.ingredients %}
+                {{ ing.name }}{% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            </li>
+          {% endfor %}
+        </ul>
+
+        <p class="mb-4">
+          Si no estás seguro, te recomendamos <strong>no continuar</strong> con esta pizza.
+        </p>
+
+        <form method="post" class="mt-2">
+          {% csrf_token %}
+          <input type="hidden" name="quantity" value="{{ quantity|default:1 }}">
+          <input type="hidden" name="ignore_allergy_warning" value="1">
+
+          <div class="buttons">
+            <a href="" class="button">
+              Cancelar
+            </a>
+            <button class="button is-danger">
+              Agregar igual 🛒
+            </button>
+          </div>
+        </form>
+      </div>
+      <hr>
+    {% endif %}
+
     <!-- 🛒 Agregar al carrito -->
     <form method="post">
       {% csrf_token %}
       <div class="field has-addons">
         <div class="control">
-          <input type="number" name="quantity" value="1" class="input" min="1">
+          <input 
+            type="number" 
+            name="quantity" 
+            value="{{ quantity|default:1 }}" 
+            class="input" 
+            min="1">
         </div>
         <div class="control">
           <button class="button is-dark is-uppercase">

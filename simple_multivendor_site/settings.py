@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'assistant',
     'vendorapi',
     "vendorpos",
+    'rest_framework',
 ]
 
 # Middleware
@@ -59,7 +60,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'analytics.middleware.ErrorLoggingMiddleware',
-    'vendorapi.middleware.ApiKeyMiddleware',
+    # 'vendorapi.middleware.ApiKeyMiddleware',
 ]
 
 # URL y Templates

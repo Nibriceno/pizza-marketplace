@@ -157,3 +157,44 @@ def send_order_webhook(order):
         print("❌ Error enviando webhook:", e)
 
     return order
+
+
+# order/utils_allergy.py
+
+def get_allergy_conflicts(profile, product):
+    """
+    Devuelve una lista de conflictos entre:
+    - Alergias del perfil (profile.allergies)
+    - Ingredientes del producto (product.ingredients)
+
+    Retorna:
+    [
+      {
+        "allergy": Allergy,
+        "ingredients": [Ingredient, ...]
+      },
+      ...
+    ]
+    """
+    conflicts = []
+
+    # Si el producto no tiene ingredientes cargados, no hacemos nada
+    if not hasattr(product, "ingredients"):
+        return conflicts
+
+    product_ingredients = list(product.ingredients.all())
+    if not product_ingredients:
+        return conflicts
+
+    ingredient_ids = [ing.id for ing in product_ingredients]
+
+    # Recorremos las alergias del usuario
+    for allergy in profile.allergies.prefetch_related("ingredients"):
+        matching = [ing for ing in allergy.ingredients.all() if ing.id in ingredient_ids]
+        if matching:
+            conflicts.append({
+                "allergy": allergy,
+                "ingredients": matching,
+            })
+
+    return conflicts

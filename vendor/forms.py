@@ -5,15 +5,24 @@ import re
 from phonenumber_field.formfields import PhoneNumberField
 from core.models import Country
 from .models import Profile
-from product.models import Product
+from product.models import Product , Ingredient
 from django.forms import ModelForm
 from location.models import Region, Provincia, Comuna
 
 
+
 class ProductForm(forms.ModelForm):
+    # Campo explícito para ingredientes (ManyToMany)
+    ingredients = forms.ModelMultipleChoiceField(
+        queryset=Ingredient.objects.none(),      # se completa en __init__
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Ingredientes",
+    )
+
     class Meta:
         model = Product
-        fields = ['title', 'category', 'description', 'price', 'image', 'preferences']
+        fields = ['title', 'category', 'description', 'price', 'image', 'preferences', 'ingredients']
         labels = {
             'title': 'Nombre del producto',
             'category': 'Categoría',
@@ -21,10 +30,26 @@ class ProductForm(forms.ModelForm):
             'price': 'Precio',
             'image': 'Imagen del producto',
             'preferences': 'Preferencias del producto',
+            'ingredients': 'Ingredientes de la pizza',
         }
         widgets = {
-            'preferences': forms.CheckboxSelectMultiple()
+            'preferences': forms.CheckboxSelectMultiple(),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Ingredientes ordenados por categoría y nombre
+        self.fields['ingredients'].queryset = (
+            Ingredient.objects.select_related("category")
+            .order_by("category__ordering", "category__name", "name")
+        )
+
+        # (Opcional) agregar clases CSS a los widgets si usas Bulma/Bootstrap, etc.
+        for name, field in self.fields.items():
+            if not isinstance(field.widget, forms.CheckboxInput) and not isinstance(field.widget, forms.CheckboxSelectMultiple):
+                existing_class = field.widget.attrs.get('class', '')
+                field.widget.attrs['class'] = (existing_class + ' input').strip()
 
 
 

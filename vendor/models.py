@@ -4,7 +4,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from core.models import Country
 from location.models import Region, Provincia, Comuna
-
+from django.utils.text import slugify   # 👈 para slugs
 
 
 class Preference(models.Model):
@@ -18,6 +18,47 @@ class Preference(models.Model):
         verbose_name = "Preferencia"
         verbose_name_plural = "Preferencias"
         ordering = ['name']
+
+
+class Allergy(models.Model):
+    """
+    Alergia alimentaria general (Gluten, Lactosa, Frutos secos, etc.)
+    Se asocia a ingredientes concretos (product.Ingredient) y a usuarios vía Profile.
+    """
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=110, unique=True, blank=True)
+    description = models.TextField(blank=True, null=True)
+
+    # Ingredientes que gatillan esta alergia
+    ingredients = models.ManyToManyField(
+        "product.Ingredient",          # 👈 referencia perezosa para evitar import circular
+        related_name="allergies",
+        blank=True,
+        verbose_name="Ingredientes relacionados",
+    )
+
+    class Meta:
+        verbose_name = "Alergia"
+        verbose_name_plural = "Alergias"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        """Genera un slug único basado en el name si no existe."""
+        if not self.slug:
+            base_slug = slugify(self.name)
+            slug = base_slug
+            num = 1
+
+            while Allergy.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{num}"
+                num += 1
+
+            self.slug = slug
+
+        super().save(*args, **kwargs)
 
 
 class Vendor(models.Model):
@@ -41,7 +82,6 @@ class Vendor(models.Model):
         return sum((item.product.price * item.quantity) for item in items)
 
 
-
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
@@ -62,6 +102,14 @@ class Profile(models.Model):
 
     # Preferencias alimentarias (vegano / sin gluten / más a futuro)
     preferences = models.ManyToManyField(Preference, blank=True)
+
+    # Alergias alimentarias del usuario
+    allergies = models.ManyToManyField(
+        Allergy,
+        blank=True,
+        related_name="profiles",
+        verbose_name="Alergias alimentarias",
+    )
 
     def __str__(self):
         return self.user.username
@@ -90,4 +138,3 @@ class UserPreference(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.preference.name} - {self.action}"
-

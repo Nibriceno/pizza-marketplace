@@ -1,22 +1,24 @@
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from django.shortcuts import get_object_or_404
 
 from vendorapi.auth import APIKeyAuth
 from vendorapi.serializers import OrderSerializer
 from order.models import Order
 
-# --------------------------------------
-#     API REST DEL POS EXTERNO
-# --------------------------------------
 
 # ➤ Obtener todas las órdenes del vendor
 @api_view(["GET"])
 @authentication_classes([APIKeyAuth])
-@permission_classes([])
+@permission_classes([AllowAny])   # 👈 OBLIGATORIO, no []
 def vendor_orders(request):
     vendor = request.auth  # el vendor autenticado por API Key
+
+    if vendor is None:
+        return Response({"detail": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
     orders = Order.objects.filter(vendors=vendor).order_by("-created_at")
     serializer = OrderSerializer(orders, many=True)
     return Response(serializer.data)
@@ -25,9 +27,13 @@ def vendor_orders(request):
 # ➤ Obtener detalle de una orden
 @api_view(["GET"])
 @authentication_classes([APIKeyAuth])
-@permission_classes([])
+@permission_classes([AllowAny])
 def vendor_order_detail(request, order_id):
     vendor = request.auth
+
+    if vendor is None:
+        return Response({"detail": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
     order = get_object_or_404(Order, id=order_id, vendors=vendor)
     serializer = OrderSerializer(order)
     return Response(serializer.data)
@@ -36,9 +42,13 @@ def vendor_order_detail(request, order_id):
 # ➤ Cambiar estado (para POS externo)
 @api_view(["POST"])
 @authentication_classes([APIKeyAuth])
-@permission_classes([])
+@permission_classes([AllowAny])
 def vendor_update_status(request, order_id):
     vendor = request.auth
+
+    if vendor is None:
+        return Response({"detail": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
     new_status = request.data.get("status")
 
     valid_states = ["accepted", "rejected", "preparing", "ready", "delivered"]
@@ -48,7 +58,6 @@ def vendor_update_status(request, order_id):
 
     order = get_object_or_404(Order, id=order_id, vendors=vendor)
 
-    # cambiar estado
     order.status = new_status
     order.save()
 

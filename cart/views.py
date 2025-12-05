@@ -12,6 +12,8 @@ from order.utilities import checkout, notify_customer, notify_vendor
 from botapi.models import TempCart
 from order.models import Order
 from analytics.utils import log_event
+from product.models import Product
+from order.utilities import get_allergy_conflicts
 
 
 # ============================================================
@@ -53,7 +55,28 @@ def cart_detail(request):
 
         # ➕ AGREGAR
         if add_product:
+            print("DEBUG ADD_PRODUCT:", add_product)
+            product = Product.objects.filter(pk=add_product).first()
+
+            if product and hasattr(request.user, "profile"):
+                # ¿El usuario ya confirmó que quiere agregar pese a las alergias?
+                ignore_warning = request.GET.get("ignore_allergy_warning") == "1"
+
+                # Detectar conflictos de alergia
+                conflicts = get_allergy_conflicts(request.user.profile, product)
+                print("DEBUG CONFLICTS:", conflicts)
+
+                # Si hay conflictos y aún no ha confirmado → mostrar advertencia
+                if conflicts and not ignore_warning:
+                    return render(request, "order/allergy_warning.html", {
+                        "product": product,
+                        "quantity": 1,
+                        "conflicts": conflicts,
+                    })
+
+            # Si no hay conflictos o ya confirmó, agregamos al carrito
             cart.add(add_product, 1)
+
             log_event(request, f"🛒 Agregó producto {add_product}",
                       page="cart/add",
                       extra_data={"product_id": add_product})

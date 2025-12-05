@@ -8,6 +8,7 @@ from .models import Category
 from .forms import AddToCartForm
 from cart.cart import Cart
 from core.models import Country
+from order.utilities import get_allergy_conflicts
 
 from product.utils import aplicar_preferencias
 
@@ -55,7 +56,26 @@ def product(request, category_slug, product_slug):
         messages.warning(request, f"🚫 Esta pizza no está disponible en tu comuna ({comuna_activa}).")
         return redirect("product:category", category_slug=category_slug)
 
-    # LOG → evitar duplicados
+    # ============================
+    # PRODUCTOS SIMILARES
+    # ============================
+    similar_qs = Product.objects.filter(category=product.category).exclude(id=product.id)
+
+    if request.user.is_authenticated and hasattr(request.user, "profile") and request.user.profile.country:
+        similar_qs = similar_qs.filter(vendor__country=request.user.profile.country)
+
+    if comuna_activa:
+        similar_qs = similar_qs.filter(
+            vendor__created_by__profile__comuna__nombre__iexact=comuna_activa
+        )
+
+    similar = list(similar_qs)
+    if len(similar) > 4:
+        similar = random.sample(similar, 4)
+
+    # ============================
+    # LOG DE VISTA (GET)
+    # ============================
     current_view = f"view_{product.id}"
     if request.method == "GET" and request.session.get("last_product_view") != current_view:
         log_event(
@@ -67,7 +87,9 @@ def product(request, category_slug, product_slug):
         )
         request.session["last_product_view"] = current_view
 
-    # POST → agregar al carrito
+    # ============================
+    # POST → AGREGAR AL CARRITO
+    # ============================
     if request.method == "POST":
 
         if not request.user.is_authenticated:
@@ -75,8 +97,30 @@ def product(request, category_slug, product_slug):
             return redirect("product:product", category_slug=category_slug, product_slug=product_slug)
 
         form = AddToCartForm(request.POST)
+
         if form.is_valid():
             quantity = form.cleaned_data["quantity"]
+
+            # 🔥 CHEQUEO DE ALERGIAS EN LA MISMA PÁGINA
+            if hasattr(request.user, "profile"):
+                ignore_warning = request.POST.get("ignore_allergy_warning") == "1"
+                conflicts = get_allergy_conflicts(request.user.profile, product)
+
+                # Mostrar advertencia en la MISMA página
+                if conflicts and not ignore_warning:
+                    return render(request, "product/product.html", {
+                        "product": product,
+                        "form": form,
+                        "quantity": quantity,
+                        "conflicts": conflicts,
+                        "allergy_warning": True,
+                        "similar_products": similar,
+                        "currency_symbol": product.vendor.country.currency_symbol,
+                        "currency_code": product.vendor.country.currency,
+                        "comuna": comuna_activa,
+                    })
+
+            # Si no hay conflictos o ya aceptó → agregar al carrito
             cart.add(product_id=product.id, quantity=quantity, update_quantity=False)
             messages.success(request, "Producto agregado al carrito.")
 
@@ -93,24 +137,14 @@ def product(request, category_slug, product_slug):
 
             request.session["last_product_view"] = current_view
             return redirect("product:product", category_slug=category_slug, product_slug=product_slug)
+
     else:
+        # GET normal
         form = AddToCartForm()
 
-    # SIMILARES filtrados por país y comuna
-    similar = Product.objects.filter(category=product.category).exclude(id=product.id)
-
-    if request.user.is_authenticated and hasattr(request.user, "profile") and request.user.profile.country:
-        similar = similar.filter(vendor__country=request.user.profile.country)
-
-    if comuna_activa:
-        similar = similar.filter(
-            vendor__created_by__profile__comuna__nombre__iexact=comuna_activa
-        )
-
-    similar = list(similar)
-    if len(similar) > 4:
-        similar = random.sample(similar, 4)
-
+    # ============================
+    # RENDER FINAL
+    # ============================
     return render(request, "product/product.html", {
         "product": product,
         "similar_products": similar,
