@@ -4,6 +4,10 @@ from django.core.files import File
 from django.db import models
 from vendor.models import Vendor, Preference
 from django.utils.text import slugify
+from io import BytesIO
+from django.core.files.base import File
+from PIL import Image
+
 
 
 class Category(models.Model):
@@ -97,7 +101,7 @@ class Product(models.Model):
     # Preferencias alimentarias
     preferences = models.ManyToManyField(Preference, blank=True)
 
-    # Ingredientes (usando tabla intermedia escalable)
+    # Ingredientes
     ingredients = models.ManyToManyField(
         "Ingredient",
         through="ProductIngredient",
@@ -112,9 +116,7 @@ class Product(models.Model):
     def __str__(self):
         return self.title
 
-    # --------------------------------------------------------
-    # SLUG
-    # --------------------------------------------------------
+    # ---------------- SLUG ----------------
     def save(self, *args, **kwargs):
         if not self.slug:
             base_slug = slugify(self.title)
@@ -129,9 +131,7 @@ class Product(models.Model):
 
         super().save(*args, **kwargs)
 
-    # --------------------------------------------------------
-    # THUMBNAIL
-    # --------------------------------------------------------
+    # ---------------- THUMBNAIL ----------------
     def get_thumbnail(self):
         if self.thumbnail:
             return self.thumbnail.url
@@ -145,20 +145,25 @@ class Product(models.Model):
 
     def make_thumbnail(self, image, size=(300, 200)):
         img = Image.open(image)
-        img.convert('RGB')
+
+        # 🔥 FIX CLAVE: si viene en RGBA/P la convertimos a RGB
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+
         img.thumbnail(size)
 
         thumb_io = BytesIO()
         img.save(thumb_io, "JPEG", quality=85)
 
-        return File(thumb_io, name=image.name)
+        # nombre distinto para el thumb
+        base_name = image.name.rsplit(".", 1)[0]
+        thumb_name = f"{base_name}_thumb.jpg"
 
-    # --------------------------------------------------------
-    # OFERTAS (se integra con Offer OneToOne)
-    # --------------------------------------------------------
+        return File(thumb_io, name=thumb_name)
+
+    # ---------------- OFERTAS ----------------
     @property
     def active_offer(self):
-        """Retorna la oferta activa si existe."""
         try:
             offer = self.offer  # related_name="offer"
             return offer if offer.is_current() else None
@@ -166,34 +171,23 @@ class Product(models.Model):
             return None
 
     def has_active_offer(self):
-        """Retorna True si existe una oferta activa."""
         return self.active_offer is not None
 
     def get_final_price(self):
-        """
-        Precio final considerando:
-        - descuento fijo
-        - porcentaje
-        - precio normal
-        """
         offer = self.active_offer
         if not offer:
             return self.price
 
-        # 🔥 PRECIO FIJO
         if offer.discount_price:
             return max(1, offer.discount_price)
 
-        # 🔥 DESCUENTO PORCENTUAL
         if offer.discount_percentage:
             final = int(self.price * (1 - offer.discount_percentage / 100))
-            return max(1, final)  # nunca permitir 0
+            return max(1, final)
 
-        # 🔥 NO HAY DESCUENTO ESPECÍFICO
         return self.price
 
     def get_offer_percentage(self):
-        """Devuelve porcentaje real del descuento (solo si aplica)."""
         offer = self.active_offer
         if not offer:
             return 0
@@ -209,6 +203,7 @@ class Product(models.Model):
             return max(1, min(pct, 90))
         except Exception:
             return 0
+
 
 
 class ProductIngredient(models.Model):

@@ -22,6 +22,27 @@
     </div>
 </div>
 
+<!-- MENÚ SEMANAL / HISTÓRICO -->
+<div class="box">
+    <div class="level is-mobile">
+        <div class="level-left">
+            <p class="title is-5 mb-0">🍽️ Menú destacado del vendedor</p>
+        </div>
+        <div class="level-right">
+            <div class="buttons">
+                <a href="{% url 'vendor:weekly_menu_edit' %}"
+                   class="button is-primary is-light">
+                    📆 Configurar menú próximos 7 días
+                </a>
+                <a href="{% url 'vendor:weekly_menu_history' %}"
+                   class="button is-link is-light">
+                    📚 Ver histórico de menú
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- MIS PRODUCTOS -->
 <div class="box">
     <div class="level">
@@ -95,6 +116,7 @@
         <p class="has-text-grey">Aún no has agregado productos.</p>
     {% endif %}
 </div>
+
 <!-- ========================================================= -->
 <!-- 🚀 DASHBOARD DE VENTAS DEL VENDEDOR + FILTROS            -->
 <!-- ========================================================= -->
@@ -126,10 +148,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-
 let salesChartInstance = null;
 let topProductsChartInstance = null;
-
 
 // ==================================================
 // 🔥 CARGAR AMBOS GRÁFICOS
@@ -138,7 +158,6 @@ function loadDashboard(range) {
     loadSalesData(range);
     loadTopProducts(range);
 }
-
 
 // ==================================================
 // 📌 1) GRÁFICO: VENTAS POR DÍA
@@ -176,7 +195,6 @@ function renderSalesChart(data) {
     });
 }
 
-
 // ==================================================
 // 🔥 2) GRÁFICO: TOP PRODUCTOS (HORIZONTAL)
 // ==================================================
@@ -187,7 +205,6 @@ function loadTopProducts(range) {
 }
 
 function renderTopProductsChart(data) {
-
     // 🔥 RECREAR CANVAS
     const box = document.getElementById("top-products-box");
     const oldCanvas = document.getElementById("topProductsChart");
@@ -223,13 +240,10 @@ function renderTopProductsChart(data) {
     });
 }
 
-
 // ==================================================
 // ✔ Cargar por defecto
 // ==================================================
 document.addEventListener("DOMContentLoaded", () => loadDashboard("7days"));
-
 </script>
-
 
 {% endblock %}

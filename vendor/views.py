@@ -9,6 +9,15 @@ from django.contrib import messages
 from order.models import  Order
 from offers.models import Offer
 from offers.forms import OfferForm
+import datetime
+import json
+from django.http import JsonResponse
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+from .models import VendorWeeklyMenu
+from .week_utils import get_week_range
+from vendor.decorators import vendor_required
+from django.core.paginator import Paginator
 
 
 
@@ -363,3 +372,176 @@ def edit_offer(request, product_id):
 @login_required
 def vendor_dashboard(request):
     return render(request, "vendor/vendor_profile.html")
+
+
+
+@login_required
+@vendor_required
+def weekly_menu_edit(request):
+    vendor = request.user.vendor  
+
+    today = timezone.localdate()
+    start_day = today
+    end_day = today + datetime.timedelta(days=6)
+
+    products = Product.objects.filter(vendor=vendor).order_by("title")
+
+    menus = VendorWeeklyMenu.objects.filter(
+        vendor=vendor,
+        date__range=(start_day, end_day),
+    )
+
+    menus_by_date = {m.date: m for m in menus}
+
+    weekday_labels = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+
+    days = []
+    for i in range(7):
+        d = start_day + datetime.timedelta(days=i)
+        days.append({
+            "date": d,
+            "menu": menus_by_date.get(d),
+            "weekday_label": weekday_labels[d.weekday()],
+        })
+
+    return render(request, "vendor/weekly_menu_edit.html", {
+        "vendor": vendor,
+        "days": days,
+        "products": products,
+        "monday": start_day,
+        "sunday": end_day,
+    })
+
+
+@login_required
+@vendor_required
+@require_POST
+def weekly_menu_assign(request):
+    vendor = request.user.vendor
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"ok": False, "error": "JSON inválido"})
+
+    product_id = data.get("product_id")
+    date_str = data.get("date")
+
+    if not product_id or not date_str:
+        return JsonResponse({"ok": False, "error": "Datos incompletos"})
+
+    # Validación fecha
+    try:
+        date_obj = datetime.date.fromisoformat(date_str)
+    except ValueError:
+        return JsonResponse({"ok": False, "error": "Fecha inválida"})
+
+    # Validación producto del vendor
+    try:
+        product = Product.objects.get(id=product_id, vendor=vendor)
+    except Product.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Producto no encontrado para este vendedor"})
+
+    VendorWeeklyMenu.objects.update_or_create(
+        vendor=vendor,
+        date=date_obj,
+        defaults={"product": product},
+    )
+
+    # Imagen segura
+    image_url = ""
+    for img_field in ["thumbnail", "image"]:
+        img = getattr(product, img_field, None)
+        if img and hasattr(img, "url"):
+            try:
+                image_url = img.url
+                break
+            except:
+                pass
+
+    price_display = ""
+    if product.price:
+        price_display = f"${int(product.price):,}".replace(",", ".")
+
+    return JsonResponse({
+        "ok": True,
+        "product_title": product.title,
+        "product_price": price_display,
+        "image_url": image_url,
+        "date": str(date_obj),
+    })
+
+@vendor_required
+@login_required
+
+
+@login_required
+@vendor_required
+def weekly_menu_history(request):
+    vendor = request.user.vendor
+
+    today = timezone.localdate()
+
+    # Leer filtros desde GET
+    from_str = request.GET.get("from")
+    to_str = request.GET.get("to")
+
+    # Si no hay filtros → últimos 30 días
+    if from_str and to_str:
+        try:
+            from_date = datetime.date.fromisoformat(from_str)
+            to_date = datetime.date.fromisoformat(to_str)
+        except ValueError:
+            from_date = today - datetime.timedelta(days=29)
+            to_date = today
+    else:
+        from_date = today - datetime.timedelta(days=29)
+        to_date = today
+
+    qs = (
+        VendorWeeklyMenu.objects
+        .filter(vendor=vendor, date__range=(from_date, to_date))
+        .select_related("product")
+        .order_by("-date")
+    )
+
+    paginator = Paginator(qs, 20)  # 20 días por página
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "vendor/weekly_menu_history.html", {
+        "vendor": vendor,
+        "page_obj": page_obj,
+        "from_date": from_date,
+        "to_date": to_date,
+    })
+
+
+
+
+
+
+@login_required
+@vendor_required
+@require_POST
+def weekly_menu_clear(request):
+    vendor = request.user.vendor
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"ok": False, "error": "JSON inválido"})
+
+    date_str = data.get("date")
+    if not date_str:
+        return JsonResponse({"ok": False, "error": "Fecha no enviada"})
+
+    try:
+        date_obj = datetime.date.fromisoformat(date_str)
+    except ValueError:
+        return JsonResponse({"ok": False, "error": "Fecha inválida"})
+
+    VendorWeeklyMenu.objects.filter(vendor=vendor, date=date_obj).delete()
+
+    return JsonResponse({"ok": True})
+

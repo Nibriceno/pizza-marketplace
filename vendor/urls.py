@@ -34,4 +34,12 @@ urlpatterns = [
 
     # 🚀 DASHBOARD NUEVO DEL VENDEDOR
     path("dashboard/", views.vendor_dashboard, name="vendor_dashboard"),
+
+
+
+
+    path("weekly-menu/", views.weekly_menu_edit, name="weekly_menu_edit"),
+    path("weekly-menu/assign/", views.weekly_menu_assign, name="weekly_menu_assign"),
+    path("weekly-menu/history/", views.weekly_menu_history, name="weekly_menu_history"),
+     path("weekly-menu/clear/", views.weekly_menu_clear, name="weekly_menu_clear"),
 ]

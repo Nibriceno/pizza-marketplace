@@ -4,7 +4,8 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from core.models import Country
 from location.models import Region, Provincia, Comuna
-from django.utils.text import slugify   # 👈 para slugs
+from django.utils.text import slugify 
+
 
 
 class Preference(models.Model):
@@ -138,3 +139,26 @@ class UserPreference(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.preference.name} - {self.action}"
+
+
+
+
+
+class VendorWeeklyMenu(models.Model):
+    vendor = models.ForeignKey(
+        "vendor.Vendor", on_delete=models.CASCADE, related_name="weekly_menus"
+    )
+    date = models.DateField()  # Día específico (lunes a domingo)
+    product = models.ForeignKey(
+        "product.Product", on_delete=models.CASCADE, related_name="weekly_menus"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("vendor", "date")
+        ordering = ["-date"]
+
+    def __str__(self):
+        return f"{self.vendor} - {self.date} - {self.product}"
