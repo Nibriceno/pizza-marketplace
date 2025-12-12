@@ -8,6 +8,7 @@ from .models import Profile
 from product.models import Product , Ingredient
 from django.forms import ModelForm
 from location.models import Region, Provincia, Comuna
+from .geocoding import geocode_address
 
 
 
@@ -93,9 +94,7 @@ class SignUpForm(UserCreationForm):
             'password1', 'password2',
         )
 
-    
-    #  Inicialización del form
-    
+    # Inicialización del formulario
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -138,9 +137,7 @@ class SignUpForm(UserCreationForm):
             if name in self.fields:
                 self.fields[name].widget.attrs.setdefault('placeholder', ph)
 
-    
-    #  Validaciones
-    
+    # Validaciones
     def clean_country(self):
         country = self.cleaned_data.get('country')
         if not country:
@@ -174,9 +171,7 @@ class SignUpForm(UserCreationForm):
         self.cleaned_data['phone'] = normalized_number
         return normalized_number
 
-   
-    #  Guardado del usuario
-    
+    # Guardado del usuario
     def save(self, commit=True):
         user = super().save(commit=False)
         user.first_name = self.cleaned_data['first_name']
@@ -185,14 +180,38 @@ class SignUpForm(UserCreationForm):
 
         if commit:
             user.save()
+
+            # Obtener datos de la dirección y comuna
+            comuna_obj = self.cleaned_data.get('comuna')
+            region_obj = self.cleaned_data.get('region')
+            country_obj = self.cleaned_data.get('country')
+
+            comuna_name = getattr(comuna_obj, "name", str(comuna_obj) if comuna_obj else "")
+            region_name = getattr(region_obj, "name", str(region_obj) if region_obj else "")
+            country_name = getattr(country_obj, "name", "Chile")
+
+            # Obtener lat/lng usando geocoding
+            lat, lng = None, None
+            try:
+                lat, lng = geocode_address(
+                    address=self.cleaned_data["address"],
+                    comuna=comuna_name,
+                    region=region_name,
+                    country=country_name,
+                )
+            except Exception:
+                pass  # No detener el registro si geocoding falla
+
             Profile.objects.create(
                 user=user,
-                country=self.cleaned_data['country'],
-                region=self.cleaned_data.get('region'),
+                country=country_obj,
+                region=region_obj,
                 provincia=self.cleaned_data.get('provincia'),
-                comuna=self.cleaned_data.get('comuna'),
+                comuna=comuna_obj,
                 phone=self.cleaned_data['phone'],
                 address=self.cleaned_data['address'],
                 zipcode=self.cleaned_data['zipcode'],
+                lat=lat,
+                lng=lng,
             )
         return user

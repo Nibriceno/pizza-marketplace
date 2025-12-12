@@ -4,8 +4,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from core.models import Country
 from location.models import Region, Provincia, Comuna
-from django.utils.text import slugify 
-
+from django.utils.text import slugify
 
 
 class Preference(models.Model):
@@ -18,7 +17,7 @@ class Preference(models.Model):
     class Meta:
         verbose_name = "Preferencia"
         verbose_name_plural = "Preferencias"
-        ordering = ['name']
+        ordering = ["name"]
 
 
 class Allergy(models.Model):
@@ -30,9 +29,8 @@ class Allergy(models.Model):
     slug = models.SlugField(max_length=110, unique=True, blank=True)
     description = models.TextField(blank=True, null=True)
 
-    # Ingredientes que gatillan esta alergia
     ingredients = models.ManyToManyField(
-        "product.Ingredient",          # 👈 referencia perezosa para evitar import circular
+        "product.Ingredient",
         related_name="allergies",
         blank=True,
         verbose_name="Ingredientes relacionados",
@@ -47,7 +45,6 @@ class Allergy(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        """Genera un slug único basado en el name si no existe."""
         if not self.slug:
             base_slug = slugify(self.name)
             slug = base_slug
@@ -65,11 +62,11 @@ class Allergy(models.Model):
 class Vendor(models.Model):
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.OneToOneField(User, related_name='vendor', on_delete=models.CASCADE)
+    created_by = models.OneToOneField(User, related_name="vendor", on_delete=models.CASCADE)
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
@@ -82,29 +79,42 @@ class Vendor(models.Model):
         items = self.items.filter(vendor_paid=True, order__vendors__in=[self.id])
         return sum((item.product.price * item.quantity) for item in items)
 
+    # ✅ properties (aquí dentro, NO otra clase Vendor abajo)
+    @property
+    def profile(self):
+        return getattr(self.created_by, "profile", None)
+
+    @property
+    def lat(self):
+        p = self.profile
+        return p.lat if p else None
+
+    @property
+    def lng(self):
+        p = self.profile
+        return p.lng if p else None
+
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
-    # País y localizacion
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True)
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
     provincia = models.ForeignKey(Provincia, on_delete=models.SET_NULL, null=True, blank=True)
     comuna = models.ForeignKey(Comuna, on_delete=models.SET_NULL, null=True, blank=True)
 
-    # Información de contacto
-    phone = PhoneNumberField(region='CL', blank=True)
+    lat = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    lng = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+
+    phone = PhoneNumberField(region="CL", blank=True)
     address = models.CharField(max_length=255)
     zipcode = models.CharField(max_length=255)
 
-    # Fechas
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # Preferencias alimentarias (vegano / sin gluten / más a futuro)
     preferences = models.ManyToManyField(Preference, blank=True)
 
-    # Alergias alimentarias del usuario
     allergies = models.ManyToManyField(
         Allergy,
         blank=True,
@@ -118,13 +128,13 @@ class Profile(models.Model):
     class Meta:
         verbose_name = "Perfil"
         verbose_name_plural = "Perfiles"
-        ordering = ['user__username']
+        ordering = ["user__username"]
 
 
 class UserPreference(models.Model):
     ACTIONS = (
-        ('add', 'add'),
-        ('remove', 'remove'),
+        ("add", "add"),
+        ("remove", "remove"),
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -135,20 +145,17 @@ class UserPreference(models.Model):
     class Meta:
         verbose_name = "Preferencia del Usuario"
         verbose_name_plural = "Preferencias del Usuario"
-        ordering = ['-timestamp']
+        ordering = ["-timestamp"]
 
     def __str__(self):
         return f"{self.user.username} - {self.preference.name} - {self.action}"
-
-
-
 
 
 class VendorWeeklyMenu(models.Model):
     vendor = models.ForeignKey(
         "vendor.Vendor", on_delete=models.CASCADE, related_name="weekly_menus"
     )
-    date = models.DateField() 
+    date = models.DateField()
     product = models.ForeignKey(
         "product.Product", on_delete=models.CASCADE, related_name="weekly_menus"
     )

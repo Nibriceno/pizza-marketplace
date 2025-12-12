@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
 from .views import profile_view, select_preferences, edit_preferences
+from .api import vendors_sales_today
 
 
 app_name = 'vendor'
@@ -42,4 +43,6 @@ urlpatterns = [
     path("weekly-menu/assign/", views.weekly_menu_assign, name="weekly_menu_assign"),
     path("weekly-menu/history/", views.weekly_menu_history, name="weekly_menu_history"),
      path("weekly-menu/clear/", views.weekly_menu_clear, name="weekly_menu_clear"),
+
+
 ]

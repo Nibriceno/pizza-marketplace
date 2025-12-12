@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from .views import preferences_kpis
 
+
 app_name = 'analytics' 
 
 urlpatterns = [
@@ -19,6 +20,9 @@ urlpatterns = [
     path("vendor/top-products/", views.vendor_top_products, name="vendor_top_products"),
 
 
+    
+    path("api/map/vendors-sales-today/", views.map_vendors_sales_today, name="map_vendors_sales_today"),
+    path( "api/map/vendors-sales-total/",views.map_vendors_sales_total,name="map_vendors_sales_total"),
 
 
 ]

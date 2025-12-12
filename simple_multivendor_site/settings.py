@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'rest_framework',
     "superadmin_panel",
 ]
+NOMINATIM_EMAIL = "ni.briceno@duocuc.cl"
 
 # Middleware
 MIDDLEWARE = [

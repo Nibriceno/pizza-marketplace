@@ -52,29 +52,76 @@ from vendor.models import Vendor
 User = get_user_model()
 
 
+from django import forms
+from django.contrib.auth.models import User
+
+from vendor.models import Vendor, Profile
+from vendor.geocoding import geocode_address  # si lo creaste, si no, lo comentas
+
 class VendorEditForm(forms.ModelForm):
+    # ====== USER ======
     username = forms.CharField(label="Usuario", max_length=150)
     email = forms.EmailField(label="Correo electrónico", required=False)
-    new_password1 = forms.CharField(
-        label="Nueva contraseña",
-        widget=forms.PasswordInput,
-        required=False,
-    )
-    new_password2 = forms.CharField(
-        label="Repetir nueva contraseña",
-        widget=forms.PasswordInput,
-        required=False,
-    )
+
+    new_password1 = forms.CharField(label="Nueva contraseña", widget=forms.PasswordInput, required=False)
+    new_password2 = forms.CharField(label="Repetir nueva contraseña", widget=forms.PasswordInput, required=False)
+
+    # ====== PROFILE (local) ======
+    country = forms.ModelChoiceField(queryset=None, required=False, label="País")
+    region = forms.ModelChoiceField(queryset=None, required=False, label="Región")
+    provincia = forms.ModelChoiceField(queryset=None, required=False, label="Provincia")
+    comuna = forms.ModelChoiceField(queryset=None, required=False, label="Comuna")
+
+    phone = forms.CharField(label="Teléfono", required=False)
+    address = forms.CharField(label="Dirección", required=False)
+    zipcode = forms.CharField(label="Código postal", required=False)
 
     class Meta:
         model = Vendor
-        fields = ["name", "country"]  # ajusta según tu modelo
+        fields = []  # ✅ no usamos campos de Vendor porque tu Vendor no tiene "name"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        user = self.instance.created_by
+
+        vendor = self.instance
+        user = vendor.created_by
+
+        # ====== USER initial ======
         self.fields["username"].initial = user.username
         self.fields["email"].initial = user.email
+
+        # ====== PROFILE instance ======
+        profile = getattr(user, "profile", None)
+        if profile is None:
+            profile = Profile(user=user)
+
+        # Import aquí para evitar problemas de import circular
+        from core.models import Country
+        from location.models import Region, Provincia, Comuna
+
+        self.fields["country"].queryset = Country.objects.all().order_by("name")
+        self.fields["region"].queryset = Region.objects.all().order_by("name")
+
+        # dependientes
+        if profile.region_id:
+            self.fields["provincia"].queryset = Provincia.objects.filter(region_id=profile.region_id).order_by("name")
+        else:
+            self.fields["provincia"].queryset = Provincia.objects.none()
+
+        if profile.provincia_id:
+            self.fields["comuna"].queryset = Comuna.objects.filter(provincia_id=profile.provincia_id).order_by("name")
+        else:
+            self.fields["comuna"].queryset = Comuna.objects.none()
+
+        # ====== PROFILE initial ======
+        self.fields["country"].initial = profile.country_id
+        self.fields["region"].initial = profile.region_id
+        self.fields["provincia"].initial = profile.provincia_id
+        self.fields["comuna"].initial = profile.comuna_id
+
+        self.fields["phone"].initial = str(profile.phone) if getattr(profile, "phone", None) else ""
+        self.fields["address"].initial = profile.address or ""
+        self.fields["zipcode"].initial = profile.zipcode or ""
 
     def clean_username(self):
         username = self.cleaned_data["username"]
@@ -96,26 +143,62 @@ class VendorEditForm(forms.ModelForm):
         return cleaned
 
     def save(self, commit=True):
-        vendor = super().save(commit=False)
+        vendor = super().save(commit=False)  # aunque no tenga fields, no pasa nada
         user = vendor.created_by
 
+        # ====== USER ======
         user.username = self.cleaned_data["username"]
-        user.email = self.cleaned_data.get("email", "")
+        user.email = (self.cleaned_data.get("email") or "").strip()
 
         new_password = self.cleaned_data.get("new_password1")
         if new_password:
             user.set_password(new_password)
 
+        # ====== PROFILE ======
+        profile = getattr(user, "profile", None)
+        if profile is None:
+            profile = Profile(user=user)
+
+        profile.country = self.cleaned_data.get("country")
+        profile.region = self.cleaned_data.get("region")
+        profile.provincia = self.cleaned_data.get("provincia")
+        profile.comuna = self.cleaned_data.get("comuna")
+
+        profile.phone = self.cleaned_data.get("phone") or ""
+        profile.address = self.cleaned_data.get("address") or ""
+        profile.zipcode = self.cleaned_data.get("zipcode") or ""
+
+        # ====== geocoding ======
+        try:
+            comuna_obj = profile.comuna
+            region_obj = profile.region
+            country_obj = profile.country
+
+            comuna_name = getattr(comuna_obj, "name", str(comuna_obj) if comuna_obj else "")
+            region_name = getattr(region_obj, "name", str(region_obj) if region_obj else "")
+            country_name = getattr(country_obj, "name", "Chile")
+
+            if profile.address and comuna_name:
+                lat, lng = geocode_address(
+                    address=profile.address,
+                    comuna=comuna_name,
+                    region=region_name,
+                    country=country_name,
+                )
+                profile.lat = lat
+                profile.lng = lng
+        except Exception:
+            pass
+
         if commit:
             user.save()
-            vendor.save()
+            vendor.save()   # guarda si cambiaste algo en Vendor (aunque no haya fields)
+            profile.save()
         else:
-            # si decides usar commit=False en algún momento
             self._user_to_save = user
+            self._profile_to_save = profile
 
         return vendor
-
-
 
 
 

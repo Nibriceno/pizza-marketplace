@@ -16,6 +16,57 @@ from django.utils.timezone import localdate
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now, localtime
+from django.http import JsonResponse
+from django.db.models import Sum, F, IntegerField, ExpressionWrapper
+from django.utils import timezone
+from django.contrib.admin.views.decorators import staff_member_required
+
+from vendor.models import Vendor
+from order.models import OrderItem
+
+
+@staff_member_required
+def map_vendors_sales_today(request):
+    today = timezone.localdate()
+
+    total_expr = ExpressionWrapper(
+        F("price") * F("quantity"),
+        output_field=IntegerField()
+    )
+
+    # ✅ MISMA LÓGICA QUE EL RESTO DEL DASHBOARD
+    # ventas = órdenes con status="paid"
+    sales_map = dict(
+        OrderItem.objects
+        .filter(
+            order__status__iexact="paid",
+            order__created_at__date=today
+        )
+        .values("vendor_id")
+        .annotate(total=Sum(total_expr))
+        .values_list("vendor_id", "total")
+    )
+
+    data = []
+    vendors = Vendor.objects.select_related("created_by__profile__comuna")
+
+    for v in vendors:
+        profile = getattr(v.created_by, "profile", None)
+        if not profile or profile.lat is None or profile.lng is None:
+            continue
+
+        data.append({
+            "id": v.id,
+            "name": getattr(v, "name", str(v)),
+            "lat": float(profile.lat),
+            "lng": float(profile.lng),
+            "comuna": str(profile.comuna) if profile.comuna else None,
+            "sales_today": int(sales_map.get(v.id, 0)),
+        })
+
+    return JsonResponse(data, safe=False)
+
+
 
 
 
@@ -471,3 +522,84 @@ def admin_top_products(request):
         [{"product": d["product__title"], "total": d["total"]} for d in data],
         safe=False
     )
+
+
+
+
+@staff_member_required
+def map_vendors_sales_today(request):
+    today = timezone.localdate()
+
+    total_expr = ExpressionWrapper(
+        F("price") * F("quantity"),
+        output_field=IntegerField()
+    )
+
+    # ✅ MISMA LÓGICA QUE EL RESTO DEL DASHBOARD
+    # ventas = órdenes con status="paid"
+    sales_map = dict(
+        OrderItem.objects
+        .filter(
+            order__status__iexact="paid",
+            order__created_at__date=today
+        )
+        .values("vendor_id")
+        .annotate(total=Sum(total_expr))
+        .values_list("vendor_id", "total")
+    )
+
+    data = []
+    vendors = Vendor.objects.select_related("created_by__profile__comuna")
+
+    for v in vendors:
+        profile = getattr(v.created_by, "profile", None)
+        if not profile or profile.lat is None or profile.lng is None:
+            continue
+
+        data.append({
+            "id": v.id,
+            "name": getattr(v, "name", str(v)),
+            "lat": float(profile.lat),
+            "lng": float(profile.lng),
+            "comuna": str(profile.comuna) if profile.comuna else None,
+            "sales_today": int(sales_map.get(v.id, 0)),
+        })
+
+    return JsonResponse(data, safe=False)
+
+
+
+@staff_member_required
+def map_vendors_sales_total(request):
+    total_expr = ExpressionWrapper(
+        F("price") * F("quantity"),
+        output_field=IntegerField()
+    )
+
+    # 🔥 VENTAS HISTÓRICAS (status paid)
+    sales_map = dict(
+        OrderItem.objects
+        .filter(order__status__iexact="paid")
+        .values("vendor_id")
+        .annotate(total=Sum(total_expr))
+        .values_list("vendor_id", "total")
+    )
+
+    data = []
+    vendors = Vendor.objects.select_related("created_by__profile__comuna")
+
+    for v in vendors:
+        profile = getattr(v.created_by, "profile", None)
+        if not profile or profile.lat is None or profile.lng is None:
+            continue
+
+        data.append({
+            "id": v.id,
+            "name": v.name,
+            "lat": float(profile.lat),
+            "lng": float(profile.lng),
+            "comuna": str(profile.comuna) if profile.comuna else None,
+            "sales_total": int(sales_map.get(v.id, 0)),
+        })
+
+    return JsonResponse(data, safe=False)
