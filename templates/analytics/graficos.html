@@ -156,119 +156,105 @@
     ///////////////////////////////////////////////////////////////
     // 🗺️ MAPA (CÍRCULOS + TAMAÑO POR VENTAS HISTÓRICAS)
     ///////////////////////////////////////////////////////////////
-    let map = null;
-    let vendorCircles = new Map(); // vendor_id -> circleMarker
-    let mapInitialized = false;
+let map = null;
+let vendorCircles = new Map();
+let mapInitialized = false;
 
-    function formatCLP(n){
-      return new Intl.NumberFormat('es-CL', {
-        style:'currency',
-        currency:'CLP',
-        maximumFractionDigits:0
-      }).format(n || 0);
-    }
+function formatCLP(n){
+  return new Intl.NumberFormat('es-CL', {
+    style:'currency',
+    currency:'CLP',
+    maximumFractionDigits:0
+  }).format(n || 0);
+}
 
-    // ✅ radio coherente para mapa pequeño (log scale)
-    function salesToRadius(totalCLP){
-      const minR = 6;   // mínimo visible
-      const maxR = 20;  // límite para no tapar
-      const s = Math.max(0, Number(totalCLP) || 0);
+// 🎯 tamaño por tramos (centenas claras)
+function salesToRadius(total){
+  if (total < 300000) return 6;
+  if (total < 500000) return 8;
+  if (total < 700000) return 10;
+  if (total < 900000) return 12;
+  if (total < 1100000) return 14;
+  if (total < 1500000) return 17;
+  return 20;
+}
 
-      const reference = 500000;                 // 500k ~ tamaño medio
-      const normalized = Math.log10(1 + s / reference);
-      const r = minR + normalized * 8;          // controla crecimiento
+// 🎨 color por nivel de ventas
+function salesToColor(total){
+  if (total < 500000) return "#22c55e";   // verde
+  if (total < 1000000) return "#eab308";  // amarillo
+  if (total < 1500000) return "#f97316";  // naranja
+  return "#ef4444";                       // rojo
+}
 
-      return Math.max(minR, Math.min(maxR, r));
-    }
+function initMapOnce(){
+  if (mapInitialized) return;
+  mapInitialized = true;
 
-    function initMapOnce(){
-      if (mapInitialized) return;
-      mapInitialized = true;
+  map = L.map("vendorsMap").setView([-33.05, -71.55], 11);
 
-      const mapDiv = document.getElementById("vendorsMap");
-      const statusEl = document.getElementById("mapStatus");
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(map);
 
-      if (!mapDiv) {
-        console.warn("❌ No existe #vendorsMap");
-        if (statusEl) statusEl.textContent = "No se encontró el contenedor del mapa.";
-        return;
+  setTimeout(() => map.invalidateSize(), 300);
+}
+
+async function loadVendorsMap(){
+  initMapOnce();
+  if (!map) return;
+
+  const statusEl = document.getElementById("mapStatus");
+
+  try {
+    const res = await fetch("/analytics/api/map/vendors-sales-total/");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+
+    const data = await res.json();
+
+    data.forEach(v => {
+      if (v.lat == null || v.lng == null) return;
+
+      const total = Number(v.sales_total || 0);
+      const radius = salesToRadius(total);
+      const color = salesToColor(total);
+
+      const popupHtml = `
+        <b>${v.name}</b><br/>
+        ${v.comuna ? v.comuna + "<br/>" : ""}
+        Ventas históricas: <b>${formatCLP(total)}</b>
+      `;
+
+      if (vendorCircles.has(v.id)) {
+        const c = vendorCircles.get(v.id);
+        c.setLatLng([v.lat, v.lng]);
+        c.setRadius(radius);
+        c.setStyle({ color, fillColor: color });
+        c.setPopupContent(popupHtml);
+      } else {
+        const c = L.circleMarker([v.lat, v.lng], {
+          radius,
+          color,
+          fillColor: color,
+          weight: total >= 1000000 ? 3 : 1.5, // borde más fuerte desde 1M
+          fillOpacity: 0.45
+        }).addTo(map);
+
+        c.bindPopup(popupHtml);
+        vendorCircles.set(v.id, c);
       }
+    });
 
-      // Leaflet viene desde base.html
-      if (typeof L === "undefined") {
-        console.error("❌ Leaflet no cargó (L undefined). Revisa base.html");
-        if (statusEl) statusEl.textContent = "Leaflet no cargó.";
-        return;
-      }
-
-      map = L.map("vendorsMap").setView([-33.05, -71.55], 11);
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap"
-      }).addTo(map);
-
-      setTimeout(() => { try { map.invalidateSize(); } catch(e) {} }, 300);
+    if (statusEl) {
+      statusEl.textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
     }
 
-    async function loadVendorsMap(){
-      initMapOnce();
-      if (!map) return;
-
-      const statusEl = document.getElementById("mapStatus");
-
-      try {
-        // 🔥 CAMBIA AQUÍ al endpoint de ventas históricas:
-        const res = await fetch("/analytics/api/map/vendors-sales-total/");
-        console.log("📡 mapa endpoint status:", res.status);
-
-        if (!res.ok) throw new Error("HTTP " + res.status);
-
-        const data = await res.json();
-        console.log("🗺️ mapa data:", data);
-
-        if (!Array.isArray(data) || data.length === 0) {
-          if (statusEl) statusEl.textContent = "Mapa OK, pero sin vendedores geocodificados.";
-          return;
-        }
-
-        data.forEach(v => {
-          if (v.lat == null || v.lng == null) return;
-
-          const total = Number(v.sales_total || 0);
-          const radius = salesToRadius(total);
-
-          const popupHtml = `
-            <b>${v.name ?? "Vendedor"}</b><br/>
-            ${v.comuna ? v.comuna + "<br/>" : ""}
-            Ventas históricas: <b>${formatCLP(total)}</b>
-          `;
-
-          if (vendorCircles.has(v.id)) {
-            const c = vendorCircles.get(v.id);
-            c.setLatLng([v.lat, v.lng]);
-            c.setRadius(radius);
-            c.setPopupContent(popupHtml);
-          } else {
-            const c = L.circleMarker([v.lat, v.lng], {
-              radius,
-              color: "#0d9488",
-              fillColor: "#0d9488",
-              weight: 2,
-              fillOpacity: 0.35
-            }).addTo(map);
-
-            c.bindPopup(popupHtml);
-            vendorCircles.set(v.id, c);
-          }
-        });
-
-        if (statusEl) statusEl.textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
-      } catch (err) {
-        console.error("❌ Error mapa:", err);
-        if (statusEl) statusEl.textContent = "Error cargando mapa (ver consola).";
-      }
-    }
+  } catch (err) {
+    console.error("❌ Error mapa:", err);
+    if (statusEl) statusEl.textContent = "Error cargando mapa";
+  }
+}
 
     ///////////////////////////////////////////////////////////////
     // 🔥 CHARTS: ventas + top productos (global)

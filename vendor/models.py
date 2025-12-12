@@ -6,6 +6,8 @@ from core.models import Country
 from location.models import Region, Provincia, Comuna
 from django.utils.text import slugify
 
+from vendor.geocoding import geocode_address
+
 
 class Preference(models.Model):
     name = models.CharField(max_length=50, unique=True)
@@ -62,7 +64,9 @@ class Allergy(models.Model):
 class Vendor(models.Model):
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.OneToOneField(User, related_name="vendor", on_delete=models.CASCADE)
+    created_by = models.OneToOneField(
+        User, related_name="vendor", on_delete=models.CASCADE
+    )
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
@@ -79,7 +83,7 @@ class Vendor(models.Model):
         items = self.items.filter(vendor_paid=True, order__vendors__in=[self.id])
         return sum((item.product.price * item.quantity) for item in items)
 
-    # ✅ properties (aquí dentro, NO otra clase Vendor abajo)
+    # ✅ properties (usa Profile del usuario)
     @property
     def profile(self):
         return getattr(self.created_by, "profile", None)
@@ -107,8 +111,8 @@ class Profile(models.Model):
     lng = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
 
     phone = PhoneNumberField(region="CL", blank=True)
-    address = models.CharField(max_length=255)
-    zipcode = models.CharField(max_length=255)
+    address = models.CharField(max_length=255, blank=True, default="")
+    zipcode = models.CharField(max_length=255, blank=True, default="")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -129,6 +133,57 @@ class Profile(models.Model):
         verbose_name = "Perfil"
         verbose_name_plural = "Perfiles"
         ordering = ["user__username"]
+
+    def _location_signature(self):
+        """Detecta cambios relevantes para recalcular coords."""
+        return (
+            (self.address or "").strip(),
+            str(self.comuna_id or ""),
+            str(self.region_id or ""),
+            str(self.country_id or ""),
+        )
+
+    def save(self, *args, **kwargs):
+        should_geocode = False
+
+        # 1) Perfil nuevo sin coords
+        if not self.pk and (self.lat is None or self.lng is None):
+            should_geocode = True
+
+        # 2) Perfil existente: si cambió address/comuna/region/country
+        if self.pk:
+            try:
+                old = Profile.objects.only(
+                    "address", "comuna_id", "region_id", "country_id", "lat", "lng"
+                ).get(pk=self.pk)
+
+                if old._location_signature() != self._location_signature():
+                    should_geocode = True
+            except Profile.DoesNotExist:
+                should_geocode = True
+
+        if should_geocode:
+            try:
+                comuna_name = str(self.comuna) if self.comuna else ""
+                region_name = str(self.region) if self.region else ""
+                country_name = str(self.country) if self.country else "Chile"
+
+                lat, lng = geocode_address(
+                    address=(self.address or "").strip(),
+                    comuna=comuna_name,
+                    region=region_name,
+                    country=country_name
+                )
+
+                if lat is not None and lng is not None:
+                    self.lat = lat
+                    self.lng = lng
+
+            except Exception as e:
+                # No romper el flujo de registro si la API falla
+                print("ERROR GEOCODING Profile.save:", e)
+
+        super().save(*args, **kwargs)
 
 
 class UserPreference(models.Model):
