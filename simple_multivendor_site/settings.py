@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'vendorapi',
     "vendorpos",
     'rest_framework',
+    "superadmin_panel",
 ]
 
 # Middleware

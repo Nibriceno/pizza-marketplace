@@ -148,7 +148,7 @@ class VendorWeeklyMenu(models.Model):
     vendor = models.ForeignKey(
         "vendor.Vendor", on_delete=models.CASCADE, related_name="weekly_menus"
     )
-    date = models.DateField()  # Día específico (lunes a domingo)
+    date = models.DateField() 
     product = models.ForeignKey(
         "product.Product", on_delete=models.CASCADE, related_name="weekly_menus"
     )

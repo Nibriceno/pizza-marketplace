@@ -30,6 +30,9 @@ urlpatterns = [
     path("vendorpos/", include("vendorpos.urls")),
 
 
+    path("super-admin/", include("superadmin_panel.urls", namespace="superadmin_panel")),
+
+
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
