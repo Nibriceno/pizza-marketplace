@@ -50,4 +50,16 @@ urlpatterns = [
 
 
     path("ingredients/manage/", views.ingredient_manage, name="ingredient_manage"),
+
+
+
+    path("vendor/", views.vendor_messaging, name="vendor_messaging"),
+    path("vendor/history/", views.vendor_messaging_history, name="vendor_messaging_history"),
+
+    path("api/provincias/", views.api_provincias, name="api_provincias"),
+    path("api/comunas/", views.api_comunas, name="api_comunas"),
+
+    path("customers/", views.customer_list, name="customer_list"),
+    path("customers/<int:customer_id>/edit/",views.customer_edit, name="customer_edit"),
+    path("customers/<int:customer_id>/delete/",views.customer_delete,name="customer_delete",),
 ]

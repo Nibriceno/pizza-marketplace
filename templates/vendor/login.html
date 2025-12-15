@@ -46,6 +46,13 @@
                 </span>
             </div>
             <p class="help is-danger">{{ form.password.errors }}</p>
+
+            <!-- ✅ Olvidé mi contraseña -->
+            <p class="has-text-right mt-2">
+                <a href="{% url 'vendor:password_reset' %}" class="has-text-grey is-size-7">
+                    ¿Olvidaste tu contraseña?
+                </a>
+            </p>
         </div>
 
         <!-- Botón -->

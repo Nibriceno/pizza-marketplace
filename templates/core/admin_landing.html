@@ -24,35 +24,6 @@
   margin-bottom: 2rem;
 }
 
-/* Botones principales (fila superior) */
-.admin-landing .buttons-admin {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1rem;
-  margin-bottom: 2.5rem;
-}
-
-.admin-landing .buttons-admin a {
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;
-  background: #0d9488;
-  color: white;
-  padding: 0.7rem 1.4rem;
-  border-radius: 999px;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.95rem;
-  transition: all .2s ease;
-  box-shadow: 0 3px 8px rgba(0,0,0,.12);
-}
-
-.admin-landing .buttons-admin a:hover {
-  background: #0b7669;
-  transform: translateY(-2px);
-}
-
 /* Secciones */
 .admin-landing .section-title {
   margin-top: 1rem;
@@ -143,96 +114,94 @@
     <h1 class="admin-title">👋 Bienvenido Admin</h1>
     <p class="admin-subtitle">Panel de control administrativo</p>
 
-    <!-- Botones principales
-    <div class="buttons-admin">
-      <a href="/admin/">⚙️ Django Admin</a>
-      <a href="/analytics/dashboard/">📊 Dashboard de Logs</a>
-      <a href="/analytics/graficos/">📈 Gráficos</a>
-      <a href="/assistant/questions/">❓ Preguntas Frecuentes</a>
-    </div> -->
-
     <!-- Herramientas generales -->
     <div class="section-title">Herramientas generales</div>
-    <p class="section-subtitle">
-      Accesos rápidos del sistema.
-    </p>
+    <p class="section-subtitle">Accesos rápidos del sistema.</p>
 
     <div class="cards">
       <div class="admin-card">
         <h3>Gestión de Usuarios</h3>
         <p>Maneja usuarios y permisos desde Django Admin.</p>
-        <a href="/admin/" class="admin-card-cta">
-          Ir a gestión de usuarios →
-        </a>
+        <a href="/admin/" class="admin-card-cta">Ir a gestión de usuarios →</a>
       </div>
 
       <div class="admin-card">
         <h3>Registro de Actividad</h3>
         <p>Consulta logs del sistema y del bot.</p>
-        <a href="/analytics/dashboard/" class="admin-card-cta">
-          Ver registros de actividad →
-        </a>
+        <a href="/analytics/dashboard/" class="admin-card-cta">Ver registros de actividad →</a>
       </div>
 
       <div class="admin-card">
         <h3>Métricas del Sistema</h3>
         <p>Revisa gráficos de actividad, errores y rendimiento.</p>
-        <a href="/analytics/graficos/" class="admin-card-cta">
-          Ver métricas →
-        </a>
+        <a href="/analytics/graficos/" class="admin-card-cta">Ver métricas →</a>
       </div>
 
       <div class="admin-card">
         <h3>Preguntas de Usuarios</h3>
         <p>Revisa las dudas almacenadas que la IA resumió.</p>
-        <a href="/assistant/questions/" class="admin-card-cta">
-          Ver preguntas de usuarios →
-        </a>
+        <a href="/assistant/questions/" class="admin-card-cta">Ver preguntas de usuarios →</a>
       </div>
     </div>
 
     {% if request.user.is_superuser %}
-      <!-- Panel de súper admin -->
-      <div class="section-title">Panel de Súper Admin</div>
-      <p class="section-subtitle">
-        Gestión avanzada de vendedores, ingredientes y menú semanal.
-      </p>
+    <!-- Panel de súper admin -->
+    <div class="section-title">Panel de Súper Admin</div>
+    <p class="section-subtitle">
+      Gestión avanzada de vendedores, compradores, ingredientes, menú y comunicación.
+    </p>
 
-      <div class="cards">
-        <!-- Vendedores -->
-        <div class="admin-card">
-          <h3>Vendedores & Productos</h3>
-          <p>
-            Maneja vendedores y sus productos desde un panel centralizado.
-          </p>
-          <a href="{% url 'superadmin_panel:vendor_list' %}" class="admin-card-cta">
-            Ir a vendedores →
-          </a>
-        </div>
-
-        <!-- Ingredientes -->
-        <div class="admin-card">
-          <h3>Ingredientes de pizzas</h3>
-          <p>
-            Administra categorías e ingredientes globales del sistema.
-          </p>
-          <a href="{% url 'superadmin_panel:ingredient_manage' %}" class="admin-card-cta">
-            Gestionar ingredientes →
-          </a>
-        </div>
-
-        <!-- Menú semanal -->
-        <div class="admin-card">
-          <h3>Menú semanal</h3>
-          <p>
-            Define qué pizza se muestra cada día por vendedor en el menú semanal.
-          </p>
-          <a href="{% url 'superadmin_panel:weekly_menu_list' %}" class="admin-card-cta">
-            Gestionar menú semanal →
-          </a>
-        </div>
+    <div class="cards">
+      <div class="admin-card">
+        <h3>Vendedores & Productos</h3>
+        <p>Maneja vendedores y sus productos desde un panel centralizado.</p>
+        <a href="{% url 'superadmin_panel:vendor_list' %}" class="admin-card-cta">
+          Ir a vendedores →
+        </a>
       </div>
+
+      <div class="admin-card">
+        <h3>Compradores</h3>
+        <p>Administra los compradores registrados en la plataforma.</p>
+        <a href="{% url 'superadmin_panel:customer_list' %}" class="admin-card-cta">
+          Ir a compradores →
+        </a>
+      </div>
+
+      <div class="admin-card">
+        <h3>Mensajería a vendedores</h3>
+        <p>Envía correos a todos, por comuna o a un vendedor específico, con adjunto e historial.</p>
+        <a href="{% url 'superadmin_panel:vendor_messaging' %}" class="admin-card-cta">
+          Ir a mensajería →
+        </a>
+      </div>
+
+      <div class="admin-card">
+        <h3>Historial de mensajes</h3>
+        <p>Revisa el registro de correos enviados a vendedores.</p>
+        <a href="/super-admin/vendor/history/" class="admin-card-cta">
+          Ver historial →
+        </a>
+      </div>
+
+      <div class="admin-card">
+        <h3>Ingredientes de pizzas</h3>
+        <p>Administra categorías e ingredientes globales del sistema.</p>
+        <a href="{% url 'superadmin_panel:ingredient_manage' %}" class="admin-card-cta">
+          Gestionar ingredientes →
+        </a>
+      </div>
+
+      <div class="admin-card">
+        <h3>Menú semanal</h3>
+        <p>Define qué pizza se muestra cada día por vendedor en el menú semanal.</p>
+        <a href="{% url 'superadmin_panel:weekly_menu_list' %}" class="admin-card-cta">
+          Gestionar menú semanal →
+        </a>
+      </div>
+    </div>
     {% endif %}
+
   </div>
 </main>
 
